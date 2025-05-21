@@ -1,0 +1,104 @@
+from jose import jwt, JWTError
+from datetime import datetime,timedelta,timezone
+from src.app.core.config import settings
+from src.app.core.auth.token_model import Token
+
+async def create_access_token(user_id:int,is_admin:bool)->Token:
+    """
+    Args:
+        user_id: ID of the user for whom the Token is created
+        is_admin: Boolean value True or False indicating whether the user is
+                  a regular user or an admin
+
+    The expiry,algorithm and encryption key of the Token are
+    configured in the src.app.core.config.py file.
+
+    Returns: An object indicating the type of Token, in this case "access"
+             and the encoded payload of the token
+    """
+    expiry:datetime = (datetime.now(timezone.utc) +
+                       timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    data_to_encode = {
+        "sub":str(user_id),
+        "exp":expiry,
+        "admin":is_admin
+    }
+    encoded_access_token_data = jwt.encode( claims=data_to_encode,
+                                            key=settings.ACCESS_TOKEN_SECRET_KEY,
+                                            algorithm=settings.TOKEN_ALGORITHM )
+    return Token(   token_type="access",
+                    token_encoded_data=encoded_access_token_data )
+
+async def create_refresh_token(user_id:int,is_admin:bool)->Token:
+    """
+    Args:
+        user_id: ID of the user for whom the Token is created
+        is_admin: Boolean value True or False indicating whether the user is
+                  a regular user or an admin
+
+    The expiry,algorithm and encryption key of the Token are
+    configured in the src.app.core.config.py file.
+
+    Returns: An object indicating the type of Token, in this case "refresh"
+             and the encoded payload of the token
+    """
+    expiry:datetime = (datetime.now(timezone.utc) +
+                       timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES))
+    data_to_encode = {
+        "sub":str(user_id),
+        "exp":expiry,
+        "admin":is_admin
+    }
+    encoded_access_token_data = jwt.encode( claims=data_to_encode,
+                                            key=settings.ACCESS_TOKEN_SECRET_KEY,
+                                            algorithm=settings.TOKEN_ALGORITHM )
+    return Token(   token_type="refresh",
+                    token_encoded_data=encoded_access_token_data )
+
+async def decode_access_token(encoded_token_data:str)->bool|dict:
+    """
+    Args:
+        encoded_token_data: The encoded token data received from the cookie which has been set
+        during login.
+    Returns:
+        Boolean ( False ) if there is an error while encoding, the Token has expired or data is
+        corrupted in some way.
+        Dictionary, containing the information about the user :
+            sub : ID of the user
+            exp : Expiry of the Token
+            admin : True or False , indicating whether the user is an admin or not
+    """
+    try:
+        token_payload = jwt.decode(token=encoded_token_data,
+                                   key=settings.ACCESS_TOKEN_SECRET_KEY,
+                                   algorithms=[settings.TOKEN_ALGORITHM])
+    except JWTError:
+        return False
+    if not token_payload:
+        return False
+    return token_payload
+
+async def decode_refresh_token(encoded_token_data:str)->bool|Token:
+    """
+    Args:
+        encoded_token_data: The encoded token data received from the cookie which has been set
+        during login.
+    Returns:
+        Boolean ( False ) if there is an error while encoding, the Token has expired or data is
+        corrupted in some way.
+        Token which is a renewed access Token.
+    """
+    try:
+        token_payload = jwt.decode(token=encoded_token_data,
+                                   key=settings.ACCESS_TOKEN_SECRET_KEY,
+                                   algorithms=[settings.TOKEN_ALGORITHM])
+    except JWTError:
+        return False
+    if not token_payload:
+        return False
+    decoded_user_id:int|None = token_payload.get("sub",None)
+    decoded_is_admin:bool|None = token_payload.get("admin",None)
+    if decoded_user_id is None or decoded_is_admin is None:
+        return False
+    return await create_access_token(decoded_user_id,decoded_is_admin)
+

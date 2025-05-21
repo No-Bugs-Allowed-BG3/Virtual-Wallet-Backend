@@ -2,9 +2,9 @@ from contextlib import asynccontextmanager
 from urllib.parse import urljoin
 from fastapi import FastAPI
 
-from app.core.config import settings
-from app.api.v1.api import api_router
-from app.crud.db import initialize_database
+from src.app.core.config import settings
+from src.app.api.v1.api import api_router
+from src.app.crud.db import initialize_database
 
 
 def _create_app() -> FastAPI:

@@ -22,11 +22,18 @@ class Settings(BaseSettings):
     )
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
+    ACCESS_TOKEN_SECRET_KEY: str = secrets.token_urlsafe(32)
+    ACCESS_TOKEN_COOKIE_NAME:str = secrets.token_urlsafe(32)
+    REFRESH_TOKEN_COOKIE_NAME:str = secrets.token_urlsafe(32)
+    REFRESH_TOKEN_SECRET_KEY: str = secrets.token_urlsafe(32)
     VERSION: str = "0.1.0"
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60
 
-    PROJECT_NAME: str
+    TOKEN_ALGORITHM = "HS256"
+
+    PROJECT_NAME: str = "MONEY_HUB_BG3"
     SQLALCHEMY_DATABASE_URI: str
 
 
