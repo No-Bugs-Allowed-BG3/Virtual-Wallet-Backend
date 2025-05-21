@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.crud.users.user import User
+from app.persistence.users.user import User
 
 
 class UserResponse(BaseModel):
