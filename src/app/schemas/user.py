@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.persistence.users.user import User
+from app.persistence.users.users import User
 
 
 class UserResponse(BaseModel):

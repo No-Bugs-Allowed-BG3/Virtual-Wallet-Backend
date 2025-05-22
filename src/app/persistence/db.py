@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
 from app.core.config import settings
 
 DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI
@@ -16,4 +15,5 @@ class Base(DeclarativeBase, AsyncAttrs):
 
 
 async def initialize_database():
-    pass
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

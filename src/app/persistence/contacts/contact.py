@@ -1,0 +1,48 @@
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
+from typing import TYPE_CHECKING, List
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.persistence.users.users import User
+
+from app.persistence.db import Base
+
+class Contact(Base):
+    """
+    Represents a Contact entity in the database.
+
+    Attributes:
+        id (uuid): Unique identifier of the contact.
+        user_id (UUID): Foreign key to the User sending funds.
+        contact_id (UUID): Foreign key to the User receiving funds.
+    
+    Relationships:
+        user (User): The User who listed the contact.
+        contact (User): The User who is listed as contact.
+    """
+
+    __tablename__ = "contacts"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+
+    contact_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False
+    )
+# WE'RE COOKED
+    user: Mapped[User] = relationship(
+        "User", foreign_keys=[user_id], backref="sent_transactions"
+    )
+    contact: Mapped[User] = relationship(
+        "User", foreign_keys=[contact_id], backref="received_transactions"
+    )

@@ -1,4 +1,4 @@
-from app.crud.users.user import User
+from app.persistence.users.users import User
 from app.schemas.user import UserCreate, UserResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
