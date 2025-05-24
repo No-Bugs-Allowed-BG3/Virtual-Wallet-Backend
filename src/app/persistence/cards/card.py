@@ -45,9 +45,10 @@ class Card(Base):
         nullable=False,
     )
 
-    card_number: Mapped[int] = mapped_column(
-        Integer,
+    card_number: Mapped[str] = mapped_column(
+        String(16),
         nullable=False,
+        unique=True,
     )
 
     expiration_date: Mapped[date] = mapped_column(
@@ -56,12 +57,12 @@ class Card(Base):
     )
 
     cardholder_name: Mapped[str] = mapped_column(
-        String,
+        String(30),
         nullable=False,
     )
 
-    cvv: Mapped[int] = mapped_column(
-        Integer,
+    cvv: Mapped[str] = mapped_column(
+        String(3),
         nullable=False,
     )
 
