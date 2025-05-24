@@ -46,6 +46,7 @@ class User(Base):
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_activated : Mapped[bool] = mapped_column(Boolean, default=False,nullable=False)
     avatar: Mapped[str] = mapped_column(String, nullable=True)
 
     balances: Mapped[List["Balance"]] = relationship(
@@ -61,5 +62,8 @@ class User(Base):
         back_populates="receiver", cascade="all, delete-orphan"
     )
     contacts: Mapped[List["Contact"]] = relationship(
-        "Contact", back_populates="user", cascade="all, delete-orphan"
+        "Contact",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="[Contact.user_id]"
     )

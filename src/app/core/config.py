@@ -31,10 +31,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 5
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60
 
-    TOKEN_ALGORITHM = "HS256"
+    TOKEN_ALGORITHM:str = "HS256"
 
     PROJECT_NAME: str = "MONEY_HUB_BG3"
-    SQLALCHEMY_DATABASE_URI: str
+    SQLALCHEMY_DATABASE_URI: str = "postgresql+asyncpg://ivan:peugeotxu10j4rs@localhost/bg3wallet"
+    PASSWORD_HASH_SALT:str = "MONEY_HUB"
 
 
 settings = Settings()  # type: ignore

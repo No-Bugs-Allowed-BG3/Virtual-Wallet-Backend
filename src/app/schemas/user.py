@@ -1,10 +1,13 @@
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel,EmailStr
+import uuid
 
 from app.persistence.users.users import User
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     username: str
     hashed_password: str | None = None
 
@@ -18,6 +21,6 @@ class UserResponse(BaseModel):
 
 
 class UserCreate(BaseModel):
-    id: int
     username: str
     password: str
+    email:EmailStr

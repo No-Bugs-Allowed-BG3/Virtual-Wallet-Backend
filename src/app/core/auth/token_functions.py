@@ -1,7 +1,7 @@
 from jose import jwt, JWTError
 from datetime import datetime,timedelta,timezone
-from src.app.core.config import settings
-from src.app.core.auth.token_model import Token
+from app.core.config import settings
+from app.core.auth.token_model import Token
 
 async def create_access_token(user_id:int,is_admin:bool)->Token:
     """
