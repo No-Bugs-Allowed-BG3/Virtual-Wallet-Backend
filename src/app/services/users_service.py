@@ -1,10 +1,8 @@
 from app.persistence.users.users import User
 from app.schemas.user import UserCreate, UserResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.services.utils.security import get_password_hash
 from app.services.utils.processors import process_db_transaction
-
 from app.services.utils.mail.sendmail import send_activation_mail
 
 async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse:

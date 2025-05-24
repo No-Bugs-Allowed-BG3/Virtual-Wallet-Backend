@@ -1,9 +1,10 @@
 from jose import jwt, JWTError
 from datetime import datetime,timedelta,timezone
 from app.core.config import settings
-from app.core.auth.token_model import Token
+from app.core.auth.token_model import TokenResponse,TokenCollection
+import uuid
 
-async def create_access_token(user_id:int,is_admin:bool)->Token:
+async def create_access_token(user_id:uuid.UUID,is_admin:bool)->TokenResponse:
     """
     Args:
         user_id: ID of the user for whom the Token is created
@@ -26,10 +27,11 @@ async def create_access_token(user_id:int,is_admin:bool)->Token:
     encoded_access_token_data = jwt.encode( claims=data_to_encode,
                                             key=settings.ACCESS_TOKEN_SECRET_KEY,
                                             algorithm=settings.TOKEN_ALGORITHM )
-    return Token(   token_type="access",
-                    token_encoded_data=encoded_access_token_data )
+    return TokenResponse(access_token=encoded_access_token_data,
+                         token_type="access",
+                         expiry=expiry)
 
-async def create_refresh_token(user_id:int,is_admin:bool)->Token:
+async def create_refresh_token(user_id:uuid.UUID,is_admin:bool)->TokenResponse:
     """
     Args:
         user_id: ID of the user for whom the Token is created
@@ -52,8 +54,9 @@ async def create_refresh_token(user_id:int,is_admin:bool)->Token:
     encoded_access_token_data = jwt.encode( claims=data_to_encode,
                                             key=settings.ACCESS_TOKEN_SECRET_KEY,
                                             algorithm=settings.TOKEN_ALGORITHM )
-    return Token(   token_type="refresh",
-                    token_encoded_data=encoded_access_token_data )
+    return TokenResponse(access_token=encoded_access_token_data,
+                        token_type="refresh",
+                        expiry=expiry)
 
 async def decode_access_token(encoded_token_data:str)->bool|dict:
     """
@@ -78,7 +81,7 @@ async def decode_access_token(encoded_token_data:str)->bool|dict:
         return False
     return token_payload
 
-async def decode_refresh_token(encoded_token_data:str)->bool|Token:
+async def decode_refresh_token(encoded_token_data:str)->bool|TokenResponse:
     """
     Args:
         encoded_token_data: The encoded token data received from the cookie which has been set
@@ -96,9 +99,16 @@ async def decode_refresh_token(encoded_token_data:str)->bool|Token:
         return False
     if not token_payload:
         return False
-    decoded_user_id:int|None = token_payload.get("sub",None)
+    decoded_user_id:uuid.UUID|None = token_payload.get("sub",None)
     decoded_is_admin:bool|None = token_payload.get("admin",None)
     if decoded_user_id is None or decoded_is_admin is None:
         return False
     return await create_access_token(decoded_user_id,decoded_is_admin)
+
+async def create_tokens(user_id:uuid.UUID,is_admin:bool)->TokenCollection:
+    return TokenCollection(
+        access=await create_access_token(user_id=user_id,is_admin=is_admin),
+        refresh=await create_refresh_token(user_id=user_id,is_admin=is_admin)
+    )
+
 

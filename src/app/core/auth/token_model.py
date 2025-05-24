@@ -1,10 +1,13 @@
-from pydantic import BaseModel
+from datetime import datetime
 
-class Token(BaseModel):
-    token_encoded_data:str
-    token_type:str
+from pydantic import BaseModel
 
 class TokenResponse(BaseModel):
     access_token:str
     token_type:str
+    expiry:datetime
+
+class TokenCollection(BaseModel):
+    access:TokenResponse
+    refresh:TokenResponse
 
