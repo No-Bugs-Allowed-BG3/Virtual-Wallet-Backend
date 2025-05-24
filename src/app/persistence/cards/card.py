@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from typing import TYPE_CHECKING, List
 from datetime import date
-from sqlalchemy import ForeignKey, Integer, Date, String
+from sqlalchemy import ForeignKey, Integer, Date, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.persistence.db import Base
@@ -75,4 +75,8 @@ class Card(Base):
     balance: Mapped["Balance"] = relationship(
         "Balance",
         back_populates="cards",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("card_number", name="uq_cards_card_number"),
     )
