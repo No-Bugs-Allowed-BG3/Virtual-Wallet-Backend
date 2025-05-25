@@ -114,12 +114,31 @@ async def decode_refresh_token(encoded_token_data:str)->bool|TokenResponse:
     return await create_access_token(decoded_user_id,decoded_is_admin)
 
 async def create_tokens(user_id:uuid.UUID,is_admin:bool)->TokenCollection:
+    """
+    Args:
+        user_id: ID of the user for whom the Token is created
+        is_admin: Boolean value True or False indicating whether the user is
+                  a regular user or an admin
+
+    Returns:
+        A collection containing both access and refresh tokens
+
+    """
     return TokenCollection(
         access=await create_access_token(user_id=user_id,is_admin=is_admin),
         refresh=await create_refresh_token(user_id=user_id,is_admin=is_admin)
     )
 
 async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->UserResponse|bool|dict:
+    """
+    Args:
+        access_token: Gets the __HTTP-Only__ "access_token" cookie set
+        during login
+
+    Returns:
+        An UserResponse object after comparing the data from the token with data from
+        the database.
+    """
     if not access_token:
         return False
     session_generator = get_session()
@@ -148,6 +167,15 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
     )
 
 async def user_can_interact(access_token:Annotated[str|None,Cookie()]=None)->bool:
+    """
+    Args:
+        access_token: Gets the __HTTP-Only__ "access_token" cookie set
+        during login
+
+    Returns:
+        A boolean representation indicating whether the user can "interact" with
+        the functionality
+    """
     if not access_token:
         return False
     session_generator = get_session()
@@ -172,6 +200,15 @@ async def user_can_interact(access_token:Annotated[str|None,Cookie()]=None)->boo
     )
 
 async def user_can_make_transactions(access_token:Annotated[str|None,Cookie()]=None)->bool:
+    """
+    Args:
+        access_token: Gets the __HTTP-Only__ "access_token" cookie set
+        during login
+
+    Returns:
+        A boolean representation indicating whether the user can perform money
+        transactions
+    """
     if not access_token:
         return False
     session_generator = get_session()
