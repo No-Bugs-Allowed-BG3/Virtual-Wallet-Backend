@@ -2,6 +2,14 @@ from jose import jwt, JWTError
 from datetime import datetime,timedelta,timezone
 from app.core.config import settings
 from app.core.auth.token_model import TokenResponse,TokenCollection
+from sqlalchemy import select
+from app.persistence.users.users import User
+from app.persistence.db import get_session
+from app.services.utils.processors import process_db_transaction
+from app.schemas.user import UserResponse
+from fastapi import Cookie,Depends
+from typing import Annotated
+
 import uuid
 
 async def create_access_token(user_id:uuid.UUID,is_admin:bool)->TokenResponse:
@@ -111,4 +119,29 @@ async def create_tokens(user_id:uuid.UUID,is_admin:bool)->TokenCollection:
         refresh=await create_refresh_token(user_id=user_id,is_admin=is_admin)
     )
 
+async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->UserResponse|bool|dict:
+    if not access_token:
+        return False
+    session_generator = get_session()
+    session = await anext(session_generator)
+    token_data = await decode_access_token(access_token)
+    if not token_data:
+        return True
+    async def _get_current_user_from_db():
+        statement = select(User).where(User.id==token_data.get("sub"))
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return False
+        return UserResponse(
+            id = user_object.id,
+            username=user_object.username,
+            is_blocked=user_object.is_blocked,
+            is_verified=user_object.is_verified,
+            is_activated=user_object.is_activated
+        )
 
+    return await process_db_transaction(
+        session=session,
+        transaction_func=_get_current_user_from_db
+    )
