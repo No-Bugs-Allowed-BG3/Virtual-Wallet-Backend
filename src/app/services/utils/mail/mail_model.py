@@ -21,7 +21,8 @@ class ActivationMailMessage(MailMessage):
     @classmethod
     def fill_data(cls,
                   to_email:EmailStr,
-                  to_username:str
+                  to_username:str,
+                  to_user_id:str
                   ):
         print(getenv("ACCOUNT_VERIFICATION_SUBJECT"))
         print(getenv("MAILJET_API_KEY"))
@@ -31,8 +32,8 @@ class ActivationMailMessage(MailMessage):
                 Name=getenv("MAILJET_SENDER_NAME")),
             To = [MailAddress(Email=to_email,Name=to_username)],
             Subject = getenv("ACCOUNT_VERIFICATION_SUBJECT"),
-            TextPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}{getenv("ACCOUNT_VERIFICATION_LINK")}{to_username}",
-            HTMLPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}<a href='{getenv("ACCOUNT_VERIFICATION_LINK")}{to_username}'>Activation Link</a>"
+            TextPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}{getenv("ACCOUNT_VERIFICATION_LINK")}{to_user_id}",
+            HTMLPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}<a href='{getenv("ACCOUNT_VERIFICATION_LINK")}{to_user_id}'>Activation Link</a>"
         )
 
 class ActivationMessagesList(BaseModel):
