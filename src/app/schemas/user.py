@@ -11,6 +11,7 @@ class UserResponse(BaseModel):
     is_blocked:bool
     is_activated:bool
     is_verified:bool
+    is_admin:bool
 
     @classmethod
     def create(cls, obj: User) -> "UserResponse":
@@ -19,7 +20,8 @@ class UserResponse(BaseModel):
             username=obj.username,
             is_blocked=obj.is_blocked,
             is_activated=obj.is_activated,
-            is_verified=obj.is_verified
+            is_verified=obj.is_verified,
+            is_admin=obj.is_admin
         )
 
 

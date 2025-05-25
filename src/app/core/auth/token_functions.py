@@ -138,7 +138,8 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
             username=user_object.username,
             is_blocked=user_object.is_blocked,
             is_verified=user_object.is_verified,
-            is_activated=user_object.is_activated
+            is_activated=user_object.is_activated,
+            is_admin=user_object.is_admin
         )
 
     return await process_db_transaction(
