@@ -146,3 +146,53 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
         session=session,
         transaction_func=_get_current_user_from_db
     )
+
+async def user_can_interact(access_token:Annotated[str|None,Cookie()]=None)->bool:
+    if not access_token:
+        return False
+    session_generator = get_session()
+    session = await anext(session_generator)
+    token_data = await decode_access_token(access_token)
+    if not token_data:
+        return False
+
+    async def _get_current_user_from_db():
+        statement = select(User).where(User.id == token_data.get("sub"))
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return False
+        if user_object.is_activated and user_object.is_verified:
+            return True
+        return False
+
+    return await process_db_transaction(
+        session=session,
+        transaction_func=_get_current_user_from_db
+    )
+
+async def user_can_make_transactions(access_token:Annotated[str|None,Cookie()]=None)->bool:
+    if not access_token:
+        return False
+    session_generator = get_session()
+    session = await anext(session_generator)
+    token_data = await decode_access_token(access_token)
+    if not token_data:
+        return False
+
+    async def _get_current_user_from_db():
+        statement = select(User).where(User.id == token_data.get("sub"))
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return False
+        if (user_object.is_activated and
+                user_object.is_verified and
+                not user_object.is_blocked):
+            return True
+        return False
+
+    return await process_db_transaction(
+        session=session,
+        transaction_func=_get_current_user_from_db
+    )
