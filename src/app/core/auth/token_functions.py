@@ -7,7 +7,7 @@ from app.persistence.users.users import User
 from app.persistence.db import get_session
 from app.services.utils.processors import process_db_transaction
 from app.schemas.user import UserResponse
-from fastapi import Cookie,Depends
+from fastapi import Cookie
 from typing import Annotated
 
 import uuid
