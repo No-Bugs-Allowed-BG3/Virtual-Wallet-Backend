@@ -1,7 +1,7 @@
 from typing import Any,Annotated
 
 from fastapi import APIRouter, Depends,UploadFile,File
-from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR
+from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
 from app.schemas.user import UserResponse, UserCreate
@@ -12,6 +12,7 @@ from app.core.auth.token_functions import (get_current_user,
 from app.api.deps import (
     SessionDep,
 )
+from services.errors import ServiceError
 
 router = APIRouter()
 
@@ -31,7 +32,10 @@ async def _get_interaction_rights(transaction_rights:Annotated[bool,Depends(user
 
 @router.post("/registrations/")
 async def _registers_user(user:UserCreate,session:AsyncSession=Depends(get_session)) -> Any:
-    return await create_user(user=user,session=session)
+    creation_result = await create_user(user=user,session=session)
+    if not isinstance(creation_result,UserResponse):
+        raise USER_ALREADY_EXISTS_EXCEPTION
+    return creation_result
 
 
 @router.get("/activations/")
@@ -39,7 +43,7 @@ async def _activate_user(current_user:Annotated[UserResponse,Depends(get_current
                         session:AsyncSession=Depends(get_session))->bool:
     activation_result = await activate_user(session=session,
                                current_user=current_user)
-    if not activation_result:
+    if not isinstance(activation_result,bool):
         raise USER_ACTIVATION_ERROR
     return activation_result
 
@@ -52,6 +56,6 @@ async def _verify_user(current_user:Annotated[UserResponse,Depends(get_current_u
                              id_document=await id_document.read(),
                              selfie=await selfie.read(),
                              session=session)
-    if not verification_result:
+    if not isinstance(verification_result,bool):
         raise USER_VERIFICATION_ERROR
     return verification_result
