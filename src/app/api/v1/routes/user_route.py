@@ -1,23 +1,32 @@
-import uuid
-from typing import Any
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, Depends
+from app.schemas.card import CardCreate, CardResponse
+from app.services.cards_service import create_card
+from app.api.deps import get_current_user, SessionDep, CurrentUser
 
-from app.schemas.user import UserResponse, UserCreate
-from app.services import users_service
-from app.api.deps import (
-    CurrentUser,
-    SessionDep,
-    get_current_user,
-)
-
-router = APIRouter()
-
+router = APIRouter(prefix="/users/me", tags=["cards"])
 
 @router.post(
-    "/",
-    # dependencies=[Depends(get_current_user)],
-    response_model=UserResponse,
+    "/cards",
+    response_model=CardResponse,
+    status_code=status.HTTP_201_CREATED
 )
-async def reads_user(session: SessionDep, user: UserCreate) -> Any:
-    return await users_service.create_user(session=session, user=user)
+async def post_card(
+    card: CardCreate,
+    session: SessionDep,
+    current: CurrentUser = Depends(get_current_user),
+):
+    try:
+        # current.id is a uuid.UUID
+        return await create_card(
+            session=session,
+            user_id=current.id,
+            card=card
+        )
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(ve)
+        )
