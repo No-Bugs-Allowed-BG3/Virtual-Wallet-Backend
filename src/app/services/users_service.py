@@ -25,9 +25,9 @@ async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse:
         transaction_func=_create,
     )
 
-async def activate_user(session:AsyncSession ,user_id:str) -> bool:
+async def activate_user(current_user:UserResponse,session:AsyncSession) -> bool:
     async def _activate():
-        statement = update(User).where(User.id == user_id).values(is_activated=True)
+        statement = update(User).where(User.id == current_user.id).values(is_activated=True)
         result = await session.execute(statement)
         await session.commit()
         if result.rowcount:

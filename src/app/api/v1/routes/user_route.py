@@ -1,6 +1,7 @@
 from typing import Any,Annotated
 
-from fastapi import APIRouter, Depends, Path,UploadFile,File
+from fastapi import APIRouter, Depends,UploadFile,File
+from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
 from app.schemas.user import UserResponse, UserCreate
@@ -17,7 +18,7 @@ router = APIRouter()
 @router.post("/current/")
 async def _get_current_user(current_user:Annotated[UserResponse,Depends(get_current_user)])->UserResponse|bool|dict:
     if not current_user:
-        return False
+        raise USER_UNAUTHORIZED
     return current_user
 
 @router.post("/current/interactions/")
@@ -28,23 +29,29 @@ async def _get_interaction_rights(interaction_rights:Annotated[bool,Depends(user
 async def _get_interaction_rights(transaction_rights:Annotated[bool,Depends(user_can_make_transactions)])->bool|dict:
     return transaction_rights
 
-
 @router.post("/registrations/")
 async def _registers_user(user:UserCreate,session:AsyncSession=Depends(get_session)) -> Any:
     return await create_user(user=user,session=session)
 
 
-@router.get("/activations/{user_id}")
-async def _activate_user(user_id:Annotated[str,Path()],session:AsyncSession=Depends(get_session))->bool:
-    return await activate_user(session=session,
-                               user_id=user_id)
+@router.get("/activations/")
+async def _activate_user(current_user:Annotated[UserResponse,Depends(get_current_user)],
+                        session:AsyncSession=Depends(get_session))->bool:
+    activation_result = await activate_user(session=session,
+                               current_user=current_user)
+    if not activation_result:
+        raise USER_ACTIVATION_ERROR
+    return activation_result
+
 @router.post("/verifications/")
 async def _verify_user(current_user:Annotated[UserResponse,Depends(get_current_user)],
                        id_document:Annotated[UploadFile,File()],
                        selfie:Annotated[UploadFile,File()],
                        session: AsyncSession = Depends(get_session))->bool:
-
-    return await verify_user(current_user=current_user,
+    verification_result = await verify_user(current_user=current_user,
                              id_document=await id_document.read(),
                              selfie=await selfie.read(),
                              session=session)
+    if not verification_result:
+        raise USER_VERIFICATION_ERROR
+    return verification_result
