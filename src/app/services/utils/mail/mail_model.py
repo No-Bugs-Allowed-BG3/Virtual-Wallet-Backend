@@ -24,16 +24,14 @@ class ActivationMailMessage(MailMessage):
                   to_username:str,
                   to_user_id:str
                   ):
-        print(getenv("ACCOUNT_VERIFICATION_SUBJECT"))
-        print(getenv("MAILJET_API_KEY"))
         return cls(
             From = MailAddress(
                 Email=getenv("MAILJET_SENDER_EMAIL"),
                 Name=getenv("MAILJET_SENDER_NAME")),
             To = [MailAddress(Email=to_email,Name=to_username)],
             Subject = getenv("ACCOUNT_VERIFICATION_SUBJECT"),
-            TextPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}{getenv("ACCOUNT_VERIFICATION_LINK")}{to_user_id}",
-            HTMLPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}<a href='{getenv("ACCOUNT_VERIFICATION_LINK")}{to_user_id}'>Activation Link</a>"
+            TextPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}{getenv("ACCOUNT_VERIFICATION_LINK")}",
+            HTMLPart = f"{getenv("ACCOUNT_VERIFICATION_TEXT")}<a href='{getenv("ACCOUNT_VERIFICATION_LINK")}'>Activation Link</a>"
         )
 
 class ActivationMessagesList(BaseModel):
