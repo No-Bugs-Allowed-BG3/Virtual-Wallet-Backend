@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.routes.user_route import router as user_route
-from app.core.auth.tokens_router import token_router
+from api.v1.routes.tokens_router import token_router
 
 api_router = APIRouter()
 

@@ -1,13 +1,16 @@
 from jose import jwt, JWTError
 from datetime import datetime,timedelta,timezone
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
-from app.core.auth.token_model import TokenResponse,TokenCollection
+from schemas.token_model import TokenResponse,TokenCollection
 from sqlalchemy import select
 from app.persistence.users.users import User
 from app.persistence.db import get_session
 from app.services.utils.processors import process_db_transaction
 from app.schemas.user import UserResponse
-from fastapi import Cookie
+from fastapi import Cookie,Depends
 from typing import Annotated
 from api.exceptions import USER_UNAUTHORIZED
 
@@ -130,20 +133,19 @@ async def create_tokens(user_id:uuid.UUID,is_admin:bool)->TokenCollection:
         refresh=await create_refresh_token(user_id=user_id,is_admin=is_admin)
     )
 
-async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->UserResponse|bool|dict:
+async def get_current_user(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->UserResponse|bool|dict:
     """
+
     Args:
-        access_token: Gets the __HTTP-Only__ "access_token" cookie set
-        during login
+        session:
+        access_token:
 
     Returns:
-        An UserResponse object after comparing the data from the token with data from
-        the database.
+
+
     """
     if not access_token:
         raise USER_UNAUTHORIZED
-    session_generator = get_session()
-    session = await anext(session_generator)
     token_data = await decode_access_token(access_token)
     if not token_data:
         raise USER_UNAUTHORIZED
@@ -168,9 +170,10 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
         transaction_func=_get_current_user_from_db
     )
 
-async def user_can_interact(access_token:Annotated[str|None,Cookie()]=None)->bool:
+async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->bool:
     """
     Args:
+        session:
         access_token: Gets the __HTTP-Only__ "access_token" cookie set
         during login
 
@@ -201,9 +204,10 @@ async def user_can_interact(access_token:Annotated[str|None,Cookie()]=None)->boo
         transaction_func=_get_current_user_from_db
     )
 
-async def user_can_make_transactions(access_token:Annotated[str|None,Cookie()]=None)->bool:
+async def user_can_make_transactions(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->bool:
     """
     Args:
+        session:
         access_token: Gets the __HTTP-Only__ "access_token" cookie set
         during login
 

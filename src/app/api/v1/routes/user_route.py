@@ -15,9 +15,9 @@ from app.services.users_service import (create_user,
                                         update_user_settings_avatar,
                                         update_user_settings_password,
                                         get_user_settings)
-from app.core.auth.token_functions import (get_current_user,
-                                           user_can_interact,
-                                           user_can_make_transactions)
+from services.utils.token_functions import (get_current_user,
+                                            user_can_interact,
+                                            user_can_make_transactions)
 from app.schemas.service_result import ServiceResult
 
 router = APIRouter()
