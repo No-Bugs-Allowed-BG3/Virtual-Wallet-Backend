@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel,EmailStr,field_validator
 from pydantic.types import StringConstraints
 import uuid
+from os import getenv
 from typing import Annotated
 
 from app.persistence.users.users import User
@@ -15,6 +16,7 @@ class UserResponse(BaseModel):
     is_activated:bool
     is_verified:bool
     is_admin:bool
+    avatar:str|None=None
 
     @classmethod
     def create(cls, obj: User) -> "UserResponse":
@@ -27,16 +29,7 @@ class UserResponse(BaseModel):
             is_admin=obj.is_admin
         )
 
-
-class UserCreate(BaseModel):
-    username: str
-    @field_validator('username')
-    @classmethod
-    def _validate_username(cls,value:str)->str:
-        if len(value) < 2 or len(value) > 20:
-            raise USERNAME_INCORRECT_FORMAT
-        return value
-
+class UserSettings(BaseModel):
     password: str
     @field_validator('password')
     @classmethod
@@ -52,10 +45,47 @@ class UserCreate(BaseModel):
         ):
             raise PASSWORD_INCORRECT_FORMAT
         return value
-
-
-
     email:EmailStr
+    phone:Annotated[str,StringConstraints(max_length=13,min_length=10,pattern=r"^\+?(\d{10}|\d{12})$")]
+    @field_validator('phone')
+    @classmethod
+    def _strip_plus(cls,value:str)->str:
+        return value.replace("+","")
+
+    @classmethod
+    def create(cls, obj: User) -> "UserSettings":
+        return UserSettings(
+            password=getenv("USER_SAMPLE_PASSWORD"),
+            email=obj.email,
+            phone=obj.phone,
+        )
+
+class UserSettingsResponse(BaseModel):
+    email:EmailStr
+    phone:str
+    avatar:str|None
+    password:str
+
+    @classmethod
+    def create(cls, obj: User) -> "UserSettingsResponse":
+        return UserSettingsResponse(
+            password=getenv("USER_SAMPLE_PASSWORD"),
+            email=obj.email,
+            phone=obj.phone,
+            avatar=obj.avatar
+        )
+
+
+class UserCreate(UserSettings):
+    username: str
+    @field_validator('username')
+    @classmethod
+    def _validate_username(cls,value:str)->str:
+        if len(value) < 2 or len(value) > 20:
+            raise USERNAME_INCORRECT_FORMAT
+        return value
+
+
 
 class UserLogin(BaseModel):
     username:str

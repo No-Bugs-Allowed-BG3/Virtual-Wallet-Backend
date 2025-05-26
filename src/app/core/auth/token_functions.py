@@ -146,7 +146,7 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
     session = await anext(session_generator)
     token_data = await decode_access_token(access_token)
     if not token_data:
-        return True
+        raise USER_UNAUTHORIZED
     async def _get_current_user_from_db():
         statement = select(User).where(User.id==token_data.get("sub"))
         result = await session.execute(statement)
@@ -159,7 +159,8 @@ async def get_current_user(access_token:Annotated[str|None,Cookie()]=None)->User
             is_blocked=user_object.is_blocked,
             is_verified=user_object.is_verified,
             is_activated=user_object.is_activated,
-            is_admin=user_object.is_admin
+            is_admin=user_object.is_admin,
+            avatar=user_object.avatar
         )
 
     return await process_db_transaction(
