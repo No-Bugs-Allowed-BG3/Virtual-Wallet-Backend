@@ -9,10 +9,6 @@ from app.services.users_service import create_user,activate_user,verify_user
 from app.core.auth.token_functions import (get_current_user,
                                            user_can_interact,
                                            user_can_make_transactions)
-from app.api.deps import (
-    SessionDep,
-)
-from services.errors import ServiceError
 
 router = APIRouter()
 
