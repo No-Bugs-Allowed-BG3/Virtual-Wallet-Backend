@@ -64,6 +64,22 @@ class UserCreate(UserSettings):
             raise USERNAME_INCORRECT_FORMAT
         return value
 
+    password:str
+    @field_validator('password')
+    @classmethod
+    def _validate_password(cls,value:str)->str:
+        if (
+            sum(c.isupper() for c in value) < 1
+        ) or (
+            sum(c.isdigit() for c in value) < 1
+        ) or (
+            sum(not c.isalnum() for c in value) < 1
+        ) or (
+            len(value) < 8
+        ):
+            raise PASSWORD_INCORRECT_FORMAT
+        return value
+
 class UserLogin(BaseModel):
     username:str
     password:str
