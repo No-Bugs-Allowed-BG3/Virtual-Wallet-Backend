@@ -1,6 +1,6 @@
 from app.persistence.users.users import User
 from app.schemas.user import UserLogin
-from app.schemas.token_model import TokenCollection
+from schemas.token import TokenCollection
 from app.services.utils.token_functions import create_tokens
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
