@@ -1,6 +1,6 @@
 from typing import Any,Annotated
 from fastapi import APIRouter, Depends,UploadFile,File
-from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
+from app.api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
 from app.schemas.user import UserResponse, UserCreate,UserSettings
@@ -15,13 +15,6 @@ from app.core.auth.token_functions import (get_current_user,
                                            user_can_make_transactions)
 from app.schemas.service_result import ServiceResult
 from app.schemas.user import UserSettingsResponse
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.schemas.card import CardCreate, CardResponse
-from app.services.cards_service import create_card
-from app.api.deps import get_current_user, SessionDep, CurrentUser
 
 router = APIRouter()
 
@@ -100,27 +93,3 @@ async def _update_user_settings_avatar(current_user:Annotated[UserResponse,Depen
     if not isinstance(update_settings_result,ServiceResult):
         raise USER_UNAUTHORIZED
     return update_settings_result
-router = APIRouter(prefix="/users/me", tags=["cards"])
-
-@router.post(
-    "/cards",
-    response_model=CardResponse,
-    status_code=status.HTTP_201_CREATED
-)
-async def post_card(
-    card: CardCreate,
-    session: SessionDep,
-    current: CurrentUser = Depends(get_current_user),
-):
-    try:
-        # current.id is a uuid.UUID
-        return await create_card(
-            session=session,
-            user_id=current.id,
-            card=card
-        )
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(ve)
-        )

@@ -9,7 +9,7 @@ from app.services.utils.processors import process_db_transaction
 from app.schemas.user import UserResponse
 from fastapi import Cookie
 from typing import Annotated
-from api.exceptions import USER_UNAUTHORIZED
+from app.api.exceptions import USER_UNAUTHORIZED
 
 import uuid
 

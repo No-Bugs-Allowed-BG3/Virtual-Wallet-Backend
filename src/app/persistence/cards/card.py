@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from typing import TYPE_CHECKING, List
 from datetime import date
-from sqlalchemy import ForeignKey, Integer, Date, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, Date, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.persistence.db import Base
@@ -19,11 +19,12 @@ class Card(Base):
     Attributes:
         id (uuid.UUID): Unique identifier of the card.
         balance_id (uuid.UUID): FK to the Balance owning this balance.
-        card_number (int): 16-Digit number of the card.
+        card_number (str): 16-Digit number of the card.
         expiration_date (datetime): Datetime object of the expiration date of the card.
         cardholder_name (str): Name of the cardholder.
-        cvv (int): 3-Digit CVV of the card.
+        cvv (str): 3-Digit CVV of the card.
         design_image (str): Link to design image handled by external service Cloudinary.
+        is_deleted (bool): Boolean holding the status of the card.
 
     Relationships:
         balance (Balance): Balance associated with this card.
@@ -69,6 +70,12 @@ class Card(Base):
     design_image: Mapped[str] = mapped_column(
         String,
         nullable=False,
+    )
+
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
 
     # --- Relationships ---

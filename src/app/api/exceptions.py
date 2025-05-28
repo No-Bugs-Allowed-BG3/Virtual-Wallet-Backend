@@ -27,3 +27,23 @@ USERNAME_INCORRECT_FORMAT = HTTPException(
 USER_ALREADY_EXISTS_EXCEPTION = HTTPException(
     status_code=400,detail="An user with this username and/or e-mail already exists!"
 )
+
+CARD_NOT_FOUND = HTTPException(
+    status_code=404,detail="A card with this number could not be found." 
+)
+
+CARD_ALREADY_EXISTS = HTTPException(
+    status_code=409,detail="A card with this number has already been registered." 
+)
+
+BALANCE_NOT_FOUND = HTTPException(
+    status_code=404,detail="No wallet balances found for this user." 
+)
+
+CURRENCY_NOT_FOUND = HTTPException(
+    status_code=404,detail="No currency found." 
+)
+
+BALANCE_ALREADY_EXISTS = HTTPException(
+    status_code=409,detail="A balance in this currency has already been registered." 
+)

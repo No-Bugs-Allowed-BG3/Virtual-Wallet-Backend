@@ -1,32 +1,47 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any
+
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth.token_functions import get_current_user
+from app.persistence.db import get_session
 from app.schemas.card import CardCreate, CardResponse
-from app.services.cards_service import create_card
-from app.api.deps import get_current_user, SessionDep, CurrentUser
+from app.schemas.user import UserResponse
+from app.services.cards_service import create_card, delete_card, read_cards
 
-router = APIRouter(prefix="/users/me", tags=["cards"])
+router = APIRouter(prefix="/users/me/cards", tags=["cards"])
+
 
 @router.post(
-    "/cards",
+    "/",
     response_model=CardResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
 )
-async def post_card(
-    card: CardCreate,
-    session: SessionDep,
-    current: CurrentUser = Depends(get_current_user),
-):
-    try:
-        # current.id is a uuid.UUID
-        return await create_card(
-            session=session,
-            user_id=current.id,
-            card=card
-        )
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(ve)
-        )
+async def register_card(
+    card_in: CardCreate,
+    current_user: UserResponse = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    return await create_card(session, current_user.id, card_in)
+
+@router.delete(
+    "/{card_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_card(
+    card_id: UUID,
+    current_user: UserResponse = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    await delete_card(session, current_user.id, card_id)
+
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+)
+async def get_cards(
+    current_user: UserResponse = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    await read_cards(session, current_user.id)

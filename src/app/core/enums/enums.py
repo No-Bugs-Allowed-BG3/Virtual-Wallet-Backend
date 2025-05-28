@@ -1,7 +1,13 @@
+from enum import Enum
 
-import enum
+class IntervalType(Enum):
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
 
-class IntervalType(enum.Enum):
-    weekly = "weekly"
-    monthly = "monthly"
-    yearly = "yearly"
+class AvailableCurrency(str, Enum):
+    USD = "usd"
+    GBP = "gbp"
+    EUR = "eur"
+    INR = "inr"
+    BGN = "bgn"

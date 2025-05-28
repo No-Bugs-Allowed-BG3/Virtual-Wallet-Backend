@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import ForeignKey, Integer, Numeric
+from sqlalchemy import ForeignKey, Integer, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from decimal import Decimal
@@ -21,7 +21,7 @@ class Balance(Base):
         id (uuid.UUID): Unique identifier of the balance.
         user_id (uuid.UUID): FK to the User owning this balance.
         currency_id (uuid.UUID): FK to the Currency of this balance.
-        amount (int): Amount of money in this balance.
+        amount (int): Amount of money in this balance, default 0.
 
     Relationships:
         user (User): owner of this balance.
@@ -51,6 +51,7 @@ class Balance(Base):
     )
     amount: Mapped[Decimal] = mapped_column(
         Numeric,
+        default=0,
         nullable=False,
     )
 
@@ -67,4 +68,8 @@ class Balance(Base):
         "Card",
         back_populates="balance",
         cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "currency_id", name="uix_user_currency"),
     )

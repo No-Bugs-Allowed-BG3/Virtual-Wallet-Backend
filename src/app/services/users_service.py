@@ -13,7 +13,7 @@ import cloudinary
 import cloudinary.uploader
 from app.schemas.service_result import ServiceResult
 
-from schemas.user import UserSettingsResponse
+from app.schemas.user import UserSettingsResponse
 
 
 async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse|ServiceError:
