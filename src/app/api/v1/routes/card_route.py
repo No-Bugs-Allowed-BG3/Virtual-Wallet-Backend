@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth.token_functions import get_current_user
+from app.services.utils.token_functions import get_current_user
 from app.persistence.db import get_session
 from app.schemas.card import CardCreate, CardResponse
 from app.schemas.user import UserResponse

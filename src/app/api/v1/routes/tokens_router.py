@@ -1,4 +1,4 @@
-from services.tokens_service import login_user
+from app.services.tokens_service import login_user
 from app.schemas.user import UserLogin
 from app.persistence.db import get_session
 from sqlalchemy.ext.asyncio import AsyncSession

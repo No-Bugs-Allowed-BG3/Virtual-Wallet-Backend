@@ -3,7 +3,8 @@
 from fastapi import APIRouter
 
 from app.api.v1.routes.user_route import router as user_route
-from api.v1.routes.tokens_router import token_router
+from app.api.v1.routes.tokens_router import token_router
+from app.api.v1.routes.card_route import router as card_route
 
 api_router = APIRouter()
 

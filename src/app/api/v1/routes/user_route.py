@@ -1,6 +1,6 @@
 from typing import Any,Annotated
 from fastapi import APIRouter,Depends,UploadFile,File
-from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
+from app.api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
 from app.schemas.user import (UserResponse,
@@ -15,7 +15,7 @@ from app.services.users_service import (create_user,
                                         update_user_settings_avatar,
                                         update_user_settings_password,
                                         get_user_settings)
-from services.utils.token_functions import (get_current_user,
+from app.services.utils.token_functions import (get_current_user,
                                             user_can_interact,
                                             user_can_make_transactions)
 from app.schemas.service_result import ServiceResult

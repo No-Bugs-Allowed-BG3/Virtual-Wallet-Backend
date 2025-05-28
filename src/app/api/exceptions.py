@@ -47,3 +47,11 @@ CURRENCY_NOT_FOUND = HTTPException(
 BALANCE_ALREADY_EXISTS = HTTPException(
     status_code=409,detail="A balance in this currency has already been registered." 
 )
+
+CONTACT_NOT_FOUND = HTTPException(
+    status_code=404,detail="No contact found." 
+)
+
+CONTACT_ALREADY_EXISTS = HTTPException(
+    status_code=409,detail="Contact has already been added." 
+)

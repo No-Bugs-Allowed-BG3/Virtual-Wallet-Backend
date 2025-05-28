@@ -1,7 +1,9 @@
+from app.api.exceptions import USER_NOT_FOUND
 from app.persistence.users.users import User
 from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from uuid import UUID
 from sqlalchemy import update,select
 from app.services.utils.security import get_password_hash,verify_password
 from app.services.utils.processors import process_db_transaction
@@ -193,3 +195,45 @@ async def get_user_settings(current_user:UserResponse,
         session=session,
         transaction_func=_get_settings,
     )
+
+async def _get_user_id_by_username(
+        db: AsyncSession,
+        username: str 
+) -> UUID:
+    user_id = await db.execute(
+        select(User.id)
+        .where(
+            User.username == username
+            )
+    )
+    if user_id is None:
+        raise USER_NOT_FOUND
+    return user_id
+
+async def _get_user_id_by_phone(
+        db: AsyncSession,
+        phone: str 
+) -> UUID:
+    user_id = await db.execute(
+        select(User.id)
+        .where(
+            User.phone == phone
+            )
+    )
+    if user_id is None:
+        raise USER_NOT_FOUND
+    return user_id
+
+async def _get_user_id_by_email(
+        db: AsyncSession,
+        email: str 
+) -> UUID:
+    user_id = await db.execute(
+        select(User.id)
+        .where(
+            User.email == email
+            )
+    )
+    if user_id is None:
+        raise USER_NOT_FOUND
+    return user_id
