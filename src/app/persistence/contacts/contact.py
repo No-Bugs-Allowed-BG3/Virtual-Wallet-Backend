@@ -39,10 +39,11 @@ class Contact(Base):
     contact_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id"), nullable=False
     )
-# WE'RE COOKED
-    user: Mapped[User] = relationship(
-        "User", foreign_keys=[user_id], backref="sent_transactions"
+
+    user: Mapped["User"] = relationship(
+        "User", foreign_keys=[user_id], back_populates="contacts"
     )
-    contact: Mapped[User] = relationship(
-        "User", foreign_keys=[contact_id], backref="received_transactions"
+
+    contact: Mapped["User"] = relationship(
+        "User", foreign_keys=[contact_id]
     )
