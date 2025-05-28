@@ -4,7 +4,7 @@ from datetime import datetime,timedelta,timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from schemas.token_model import TokenResponse,TokenCollection
+from schemas.token import TokenResponse,TokenCollection
 from sqlalchemy import select
 from app.persistence.users.users import User
 from app.persistence.db import get_session
