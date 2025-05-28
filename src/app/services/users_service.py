@@ -1,9 +1,9 @@
 from app.persistence.users.users import User
-from app.schemas.user import UserCreate, UserResponse,UserSettings
+from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import update,select
-from app.services.utils.security import get_password_hash
+from app.services.utils.security import get_password_hash,verify_password
 from app.services.utils.processors import process_db_transaction
 from app.services.utils.mail.sendmail import send_activation_mail
 from app.services.errors import ServiceError
@@ -12,9 +12,6 @@ from os import getenv
 import cloudinary
 import cloudinary.uploader
 from app.schemas.service_result import ServiceResult
-
-from app.schemas.user import UserSettingsResponse
-
 
 async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse|ServiceError:
     async def _create():
@@ -36,7 +33,8 @@ async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse|Se
         transaction_func=_create,
     )
 
-async def activate_user(current_user:UserResponse,session:AsyncSession) -> ServiceResult|ServiceError:
+async def activate_user(current_user:UserResponse,
+                        session:AsyncSession) -> ServiceResult|ServiceError:
     async def _activate():
         statement = update(User).where(User.id == current_user.id).values(is_activated=True)
         result = await session.execute(statement)
@@ -102,27 +100,34 @@ async def update_user_settings_avatar(current_user:UserResponse,
         session=session,
         transaction_func=_update_avatar,
     )
-    print(service_result)
     return ServiceResult(
         result=service_result
     )
 
 
-async def update_user_settings(current_user:UserResponse,
+async def update_user_settings_contacts(current_user:UserResponse,
                                session:AsyncSession,
                                settings:UserSettings) -> ServiceResult|ServiceError:
+    async def _get_old_user_info():
+        statement = select(User).where(User.id == current_user.id)
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        return user_object
+
+    old_user_info = await _get_old_user_info()
+    old_user_email = str(old_user_info.email)
+    emails_differ = not (settings.email == old_user_email)
     async def _update_settings():
-        if settings.password == getenv("USER_SAMPLE_PASSWORD"):
+        if not emails_differ:
             statement = update(User).where(User.id == current_user.id).values(
                 email=settings.email,
                 phone=settings.phone
                 )
         else:
-            settings.password = get_password_hash(settings.password)
             statement = update(User).where(User.id == current_user.id).values(
                 email=settings.email,
-                password=settings.password,
-                phone=settings.phone
+                phone=settings.phone,
+                is_activated=False
                 )
         result = await session.execute(statement)
         await session.commit()
@@ -134,11 +139,45 @@ async def update_user_settings(current_user:UserResponse,
         session=session,
         transaction_func=_update_settings,
     )
-    return_result = ServiceResult(
+    if emails_differ and service_result:
+        await send_activation_mail(
+            to_user_id=str(old_user_info.id),
+            to_email=str(settings.email),
+            to_username=str(old_user_info.username)
+        )
+    return ServiceResult(
         result=service_result
     )
-    print(isinstance(return_result,ServiceResult))
-    return return_result
+
+async def update_user_settings_password(current_user:UserResponse,
+                               session:AsyncSession,
+                               old_password:str,
+                                new_password:str) -> ServiceResult|ServiceError:
+    async def _update_settings_password():
+        statement = select(User).where(User.id == current_user.id)
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return False
+        if not verify_password(old_password,user_object.password):
+            return False
+        new_password_hash = get_password_hash(new_password)
+        statement = update(User).where(User.id == current_user.id).values(
+            password = new_password_hash
+            )
+        result = await session.execute(statement)
+        await session.commit()
+        if result.rowcount:
+            return True
+        return ServiceError.ERROR_USER_NOT_FOUND
+
+    service_result = await process_db_transaction(
+        session=session,
+        transaction_func=_update_settings_password,
+    )
+    return ServiceResult(
+        result=service_result
+    )
 
 async def get_user_settings(current_user:UserResponse,
                                session:AsyncSession) -> UserSettingsResponse|ServiceError:

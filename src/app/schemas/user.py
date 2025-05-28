@@ -3,11 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel,EmailStr,field_validator
 from pydantic.types import StringConstraints
 import uuid
-from os import getenv
 from typing import Annotated
-
 from app.persistence.users.users import User
-
 
 class UserResponse(BaseModel):
     id: uuid.UUID
@@ -30,21 +27,6 @@ class UserResponse(BaseModel):
         )
 
 class UserSettings(BaseModel):
-    password: str
-    @field_validator('password')
-    @classmethod
-    def _validate_password(cls,value:str)->str:
-        if (
-            sum(c.isupper() for c in value) < 1
-        ) or (
-            sum(c.isdigit() for c in value) < 1
-        ) or (
-            sum(not c.isalnum() for c in value) < 1
-        ) or (
-            len(value) < 8
-        ):
-            raise PASSWORD_INCORRECT_FORMAT
-        return value
     email:EmailStr
     phone:Annotated[str,StringConstraints(max_length=13,min_length=10,pattern=r"^\+?(\d{10}|\d{12})$")]
     @field_validator('phone')
@@ -55,7 +37,6 @@ class UserSettings(BaseModel):
     @classmethod
     def create(cls, obj: User) -> "UserSettings":
         return UserSettings(
-            password=getenv("USER_SAMPLE_PASSWORD"),
             email=obj.email,
             phone=obj.phone,
         )
@@ -64,12 +45,10 @@ class UserSettingsResponse(BaseModel):
     email:EmailStr
     phone:str
     avatar:str|None
-    password:str
 
     @classmethod
     def create(cls, obj: User) -> "UserSettingsResponse":
         return UserSettingsResponse(
-            password=getenv("USER_SAMPLE_PASSWORD"),
             email=obj.email,
             phone=obj.phone,
             avatar=obj.avatar
@@ -85,8 +64,6 @@ class UserCreate(UserSettings):
             raise USERNAME_INCORRECT_FORMAT
         return value
 
-
-
 class UserLogin(BaseModel):
     username:str
     password:str
@@ -97,3 +74,21 @@ class UserLogin(BaseModel):
             username=form_data.username,
             password=form_data.password
         )
+
+class UserPasswordCollection(BaseModel):
+    new_password: str
+    @field_validator('new_password')
+    @classmethod
+    def _validate_password(cls,value:str)->str:
+        if (
+            sum(c.isupper() for c in value) < 1
+        ) or (
+            sum(c.isdigit() for c in value) < 1
+        ) or (
+            sum(not c.isalnum() for c in value) < 1
+        ) or (
+            len(value) < 8
+        ):
+            raise PASSWORD_INCORRECT_FORMAT
+        return value
+    old_password: str

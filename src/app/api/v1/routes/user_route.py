@@ -1,20 +1,24 @@
 from typing import Any,Annotated
-from fastapi import APIRouter, Depends,UploadFile,File
-from app.api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
+from fastapi import APIRouter,Depends,UploadFile,File
+from api.exceptions import USER_UNAUTHORIZED,USER_ACTIVATION_ERROR,USER_VERIFICATION_ERROR,USER_ALREADY_EXISTS_EXCEPTION
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
-from app.schemas.user import UserResponse, UserCreate,UserSettings
+from app.schemas.user import (UserResponse,
+                              UserCreate,
+                              UserSettings,
+                              UserPasswordCollection,
+                              UserSettingsResponse)
 from app.services.users_service import (create_user,
                                         activate_user,
                                         verify_user,
-                                        update_user_settings,
+                                        update_user_settings_contacts,
                                         update_user_settings_avatar,
+                                        update_user_settings_password,
                                         get_user_settings)
-from app.core.auth.token_functions import (get_current_user,
-                                           user_can_interact,
-                                           user_can_make_transactions)
+from services.utils.token_functions import (get_current_user,
+                                            user_can_interact,
+                                            user_can_make_transactions)
 from app.schemas.service_result import ServiceResult
-from app.schemas.user import UserSettingsResponse
 
 router = APIRouter()
 
@@ -71,19 +75,32 @@ async def _get_user_settings(current_user:Annotated[UserResponse,Depends(get_cur
         raise USER_UNAUTHORIZED
     return get_settings_result
 
-@router.post("/current/settings/")
-async def _update_user_settings(current_user:Annotated[UserResponse,Depends(get_current_user)],
+@router.post("/current/settings/contacts/")
+async def _update_user_settings_contacts(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 user_settings:UserSettings,
                                 session: AsyncSession = Depends(get_session))->ServiceResult:
-    update_settings_result = await update_user_settings(current_user=current_user,
+    update_settings_contacts_result = await update_user_settings_contacts(current_user=current_user,
                                                         session=session,
                                                         settings=user_settings)
-    if not isinstance(update_settings_result,ServiceResult):
+    if not isinstance(update_settings_contacts_result,ServiceResult):
         raise USER_UNAUTHORIZED
-    return update_settings_result
+    return update_settings_contacts_result
+
+
+@router.post("/current/settings/password/")
+async def _update_user_settings_password(current_user:Annotated[UserResponse,Depends(get_current_user)],
+                                password_collection:UserPasswordCollection,
+                                session: AsyncSession = Depends(get_session))->ServiceResult:
+    update_settings_password_result = await update_user_settings_password(current_user=current_user,
+                                    session=session,
+                                    old_password=password_collection.old_password,
+                                    new_password=password_collection.new_password
+                                    )
+    if not isinstance(update_settings_password_result,ServiceResult):
+        raise USER_UNAUTHORIZED
+    return update_settings_password_result
 
 @router.post("/current/settings/avatar/")
-
 async def _update_user_settings_avatar(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 avatar:Annotated[UploadFile|None,File()] = None,
                                 session: AsyncSession = Depends(get_session))->ServiceResult:
