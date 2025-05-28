@@ -1,5 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from app.persistence.contacts.contact import Contact
+
+class ContactCreate(BaseModel):
+    username: str | None = None
+    phone:    str | None = None
+    email:    str | None = None
+
+    @model_validator
+    def exactly_one(cls, values):
+        non_null = sum(bool(values[field]) for field in ("username", "phone", "email"))
+        if non_null != 1:
+            raise ValueError("Provide exactly one of username, phone or email")
+        return values
 
 class ContactResponse(BaseModel):
     username: str
