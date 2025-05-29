@@ -200,12 +200,13 @@ async def _get_user_id_by_username(
         db: AsyncSession,
         username: str 
 ) -> UUID:
-    user_id = await db.execute(
+    result = await db.execute(
         select(User.id)
         .where(
             User.username == username
             )
     )
+    user_id = result.scalar_one_or_none()
     if user_id is None:
         raise USER_NOT_FOUND
     return user_id
@@ -214,12 +215,13 @@ async def _get_user_id_by_phone(
         db: AsyncSession,
         phone: str 
 ) -> UUID:
-    user_id = await db.execute(
+    result = await db.execute(
         select(User.id)
         .where(
             User.phone == phone
             )
     )
+    user_id = result.scalar_one_or_none()
     if user_id is None:
         raise USER_NOT_FOUND
     return user_id
@@ -228,12 +230,13 @@ async def _get_user_id_by_email(
         db: AsyncSession,
         email: str 
 ) -> UUID:
-    user_id = await db.execute(
+    result = await db.execute(
         select(User.id)
         .where(
             User.email == email
             )
     )
+    user_id = result.scalar_one_or_none()
     if user_id is None:
         raise USER_NOT_FOUND
     return user_id

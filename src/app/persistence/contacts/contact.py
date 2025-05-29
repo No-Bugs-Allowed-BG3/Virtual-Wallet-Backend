@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from typing import TYPE_CHECKING, List
-from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy import Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.persistence.users.users import User
@@ -24,6 +24,10 @@ class Contact(Base):
     """
 
     __tablename__ = "contacts"
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "contact_id", name="uix_user_contact"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
