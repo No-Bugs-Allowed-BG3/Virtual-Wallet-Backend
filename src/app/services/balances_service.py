@@ -13,7 +13,7 @@ async def _create_balance(
         user_id: UUID,
         currency_code: str     
 ) -> BalanceResponse:
-    currency_id = _get_currency_id_by_currency_code(db, currency_code)
+    currency_id = await _get_currency_id_by_currency_code(db, currency_code)
     balance = Balance(user_id=user_id,currency_id=currency_id)
     db.add(balance)
     try:
@@ -23,8 +23,11 @@ async def _create_balance(
     except IntegrityError:
         await db.rollback()
         raise BALANCE_ALREADY_EXISTS
-    return BalanceResponse.create(balance)
-
+    return BalanceResponse(
+        id=balance.id,
+        amount=balance.amount,
+        currency_code=currency_code,
+    )
 
 async def _get_balance_ids_by_user_id(
     db: AsyncSession,
@@ -53,6 +56,4 @@ async def _get_balance_id_by_user_id_and_currency_code(
             )
     )
     balance_id = result.scalars().first()
-    if balance_id is None:
-        raise BALANCE_NOT_FOUND
     return balance_id

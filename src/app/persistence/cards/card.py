@@ -69,7 +69,8 @@ class Card(Base):
 
     design_image: Mapped[str] = mapped_column(
         String,
-        nullable=False,
+        nullable=True,
+        default=None,
     )
 
     is_deleted: Mapped[bool] = mapped_column(

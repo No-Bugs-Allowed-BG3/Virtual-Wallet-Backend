@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Any
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/users/me/cards", tags=["cards"])
 async def register_card(
     card_in: CardCreate,
     current_user: UserResponse = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_session)
 ) -> Any:
     return await create_card(session, current_user.id, card_in)
 
@@ -43,5 +43,5 @@ async def remove_card(
 async def get_cards(
     current_user: UserResponse = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> None:
-    await read_cards(session, current_user.id)
+) -> List[CardResponse]:
+    return await read_cards(session, current_user.id)

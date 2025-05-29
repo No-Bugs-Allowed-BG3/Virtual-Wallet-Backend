@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     TOKEN_ALGORITHM:str = "HS256"
 
     PROJECT_NAME: str = "MONEY_HUB_BG3"
-    SQLALCHEMY_DATABASE_URI: str = "postgresql+asyncpg://ivan:peugeotxu10j4rs@localhost/bg3wallet"
+    SQLALCHEMY_DATABASE_URI: str = "postgresql+asyncpg://postgres:#$%RolaPss@localhost/virtual_wallet"
     PASSWORD_HASH_SALT:str = "MONEY_HUB"
 
 
