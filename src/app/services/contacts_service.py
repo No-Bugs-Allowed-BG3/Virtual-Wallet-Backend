@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import USER_NOT_FOUND, CONTACT_ALREADY_EXISTS
 
 from app.persistence.contacts.contact import Contact
+from app.persistence.users.users import User
 from app.schemas.contact import ContactResponse
 from app.services.users_service import _get_user_id_by_username, _get_user_id_by_email, _get_user_id_by_phone
 
@@ -44,3 +45,29 @@ async def create_contact(
         raise CONTACT_ALREADY_EXISTS
     return ContactResponse.create(contact)
 
+async def read_contacts(
+        db: AsyncSession,
+        user_id: UUID
+) -> List[ContactResponse]:
+    stmt = (
+        select(
+            User.username,
+            User.phone,
+            User.email
+        )
+        .join(Contact, Contact.contact_id == User.id)
+        .where(Contact.user_id == user_id)
+    )
+
+    result = await db.execute(stmt)
+
+    contacts = [
+        ContactResponse(
+            username=row.username,
+            phone=row.phone,
+            email=row.email,
+        )
+        for row in result.fetchall()
+    ]
+
+    return contacts
