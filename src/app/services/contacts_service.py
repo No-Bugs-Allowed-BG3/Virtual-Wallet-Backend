@@ -1,6 +1,6 @@
-from typing import List
+from typing import Any, List
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import USER_NOT_FOUND, CONTACT_ALREADY_EXISTS
@@ -56,7 +56,10 @@ async def read_contacts(
             User.email
         )
         .join(Contact, Contact.contact_id == User.id)
-        .where(Contact.user_id == user_id)
+        .where(
+            Contact.user_id == user_id,
+            Contact.is_deleted.is_(False)
+            )
     )
 
     result = await db.execute(stmt)
@@ -71,3 +74,25 @@ async def read_contacts(
     ]
 
     return contacts
+
+async def delete_contact(
+        db: AsyncSession,
+        user_id: UUID,
+        contact_id: UUID
+) -> None:
+    result = await db.execute(
+        update(Contact)
+        .where(
+            Contact.id == contact_id,
+            Contact.user_id == user_id,
+            Contact.is_deleted.is_(False)
+        )
+        .values(
+            is_deleted  = True
+        )
+    )
+
+    if result.rowcount == 0:
+        raise USER_NOT_FOUND
+
+    await db.commit()

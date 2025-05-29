@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from typing import TYPE_CHECKING, List
-from sqlalchemy import ForeignKey
+from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.persistence.users.users import User
@@ -16,6 +16,7 @@ class Contact(Base):
         id (uuid): Unique identifier of the contact.
         user_id (UUID): Foreign key to the User sending funds.
         contact_id (UUID): Foreign key to the User receiving funds.
+        is_deleted (bool): ...
     
     Relationships:
         user (User): The User who listed the contact.
@@ -38,6 +39,12 @@ class Contact(Base):
 
     contact_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id"), nullable=False
+    )
+    
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
 
     user: Mapped["User"] = relationship(
