@@ -13,6 +13,10 @@ class UserNotFound(CustomException):
     def __init__(self, detail: str = "User not found!"):
         super().__init__(detail=detail, status_code=status.HTTP_404_NOT_FOUND)
 
+class TransactionNotFound(CustomException):
+    def __init__(self, detail: str = "Transaction not found!"):
+        super().__init__(detail=detail, status_code=status.HTTP_404_NOT_FOUND)
+
 class UserUnauthorized(CustomException):
     def __init__(self, detail: str = "Unauthorized access! You don't have sufficient rights to access this page!"):
         super().__init__(detail=detail, status_code=status.HTTP_401_UNAUTHORIZED)

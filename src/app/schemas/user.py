@@ -37,18 +37,9 @@ class AdminUserResponse(BaseModel):
     is_admin:bool
     avatar:str|None=None
 
-    @classmethod
-    def create(cls, obj: User) -> "AdminUserResponse":
-        return AdminUserResponse(
-            id=obj.id,
-            username=obj.username,
-            email=obj.email,
-            phone=obj.phone,
-            is_blocked=obj.is_blocked,
-            is_activated=obj.is_activated,
-            is_verified=obj.is_verified,
-            is_admin=obj.is_admin
-        )
+    class Config:
+        orm_mode = True
+
     
 class UserSettings(BaseModel):
     email:EmailStr
