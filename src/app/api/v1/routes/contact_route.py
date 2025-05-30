@@ -1,14 +1,14 @@
 from uuid import UUID
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.utils.token_functions import get_current_user
 from app.persistence.db import get_session
 from app.schemas.contact import ContactResponse, ContactCreate
-from app.schemas.user import UserResponse
-from app.services.contacts_service import create_contact, read_contacts, delete_contact
+from app.schemas.user import UserResponse, User as CurrentUser
+from app.services.contacts_service import create_contact, read_contacts, delete_contact, search_contact
 
 router = APIRouter(prefix="/users/me/contacts", tags=["contacts"])
 
@@ -58,3 +58,11 @@ async def remove_contact(
         contact_id=contact_id,
         db=db
     )
+
+@router.get("/search", response_model=List[ContactResponse])
+async def search_contacts(
+    query: str = Query(..., min_length=1),
+    db: AsyncSession = Depends(get_session),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return await search_contact(db=db, user_id=current_user.id, query=query)

@@ -1,7 +1,8 @@
 from typing import Any, List
 from uuid import UUID
+import uuid
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import USER_NOT_FOUND, CONTACT_ALREADY_EXISTS
@@ -103,3 +104,30 @@ async def delete_contact(
     contact = result.scalar_one()
     contact.is_deleted = True
     await db.commit()
+
+async def search_contact(db: AsyncSession, user_id: uuid.UUID, query: str):
+    stmt = (
+        select(User)
+        .join(Contact, Contact.contact_id == User.id)
+        .where(
+            Contact.user_id == user_id,
+            Contact.is_deleted.is_(False),
+            or_(
+                User.username.ilike(f"%{query}%"),
+                User.phone.ilike(f"%{query}%"),
+                User.email.ilike(f"%{query}%"),
+            )
+        )
+    )
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+    if not users:
+        raise HTTPException(status_code=404, detail="No contacts found matching the query")
+    
+    contacts = [ContactResponse(
+        username=user.username,
+        phone=user.phone,
+        email=user.email,
+    ) for user in users]
+
+    return contacts
