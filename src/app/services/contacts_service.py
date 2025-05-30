@@ -1,10 +1,9 @@
 from typing import Any, List
 from uuid import UUID
-from fastapi import HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.exceptions import USER_NOT_FOUND, CONTACT_ALREADY_EXISTS
+from app.api.exceptions import UserNotFound, ContactAlreadyExists, ContactNotFound
 
 from app.persistence.contacts.contact import Contact
 from app.persistence.users.users import User
@@ -34,7 +33,7 @@ async def create_contact(
 ) -> ContactResponse:
     contact_id = await _find_user_id(db, username, phone, email)
     if not contact_id:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     contact = Contact(user_id=user_id,contact_id=contact_id)
     db.add(contact)
     try:
@@ -43,7 +42,7 @@ async def create_contact(
         await db.refresh(contact)
     except IntegrityError:
         await db.rollback()
-        raise CONTACT_ALREADY_EXISTS
+        raise ContactAlreadyExists()
     await db.refresh(contact, ["contact"])
     return ContactResponse.create(contact)
 
@@ -75,6 +74,9 @@ async def read_contacts(
         for row in result.fetchall()
     ]
 
+    if not contacts:
+        raise ContactNotFound()
+
     return contacts
 
 async def _get_contact(
@@ -90,6 +92,8 @@ async def _get_contact(
             Contact.is_deleted.is_(False)
         )
     )
+    if not result:
+        raise ContactNotFound()
     return result
 
 async def delete_contact(
@@ -99,7 +103,7 @@ async def delete_contact(
 ) -> None:
     result = await _get_contact(db, user_id, contact_id)
     if not result:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     contact = result.scalar_one()
     contact.is_deleted = True
     await db.commit()
