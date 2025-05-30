@@ -26,6 +26,30 @@ class UserResponse(BaseModel):
             is_admin=obj.is_admin
         )
 
+class AdminUserResponse(BaseModel):
+    id: uuid.UUID
+    username: str
+    email: str
+    phone: str
+    is_blocked:bool
+    is_activated:bool
+    is_verified:bool
+    is_admin:bool
+    avatar:str|None=None
+
+    @classmethod
+    def create(cls, obj: User) -> "AdminUserResponse":
+        return AdminUserResponse(
+            id=obj.id,
+            username=obj.username,
+            email=obj.email,
+            phone=obj.phone,
+            is_blocked=obj.is_blocked,
+            is_activated=obj.is_activated,
+            is_verified=obj.is_verified,
+            is_admin=obj.is_admin
+        )
+    
 class UserSettings(BaseModel):
     email:EmailStr
     phone:Annotated[str,StringConstraints(max_length=13,min_length=10,pattern=r"^\+?(\d{10}|\d{12})$")]

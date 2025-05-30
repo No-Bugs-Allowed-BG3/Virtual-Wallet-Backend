@@ -41,6 +41,10 @@ class CardNotFound(CustomException):
     def __init__(self, detail: str = "A card with this number could not be found."):
         super().__init__(detail=detail, status_code=status.HTTP_404_NOT_FOUND)
 
+class NoCards(CustomException):
+    def __init__(self, detail: str = "No registered cards."):
+        super().__init__(detail=detail, status_code=status.HTTP_404_NOT_FOUND)
+
 class CardAlreadyExists(CustomException):
     def __init__(self, detail: str = "A card with this number has already been registered."):
         super().__init__(detail=detail, status_code=status.HTTP_409_CONFLICT)

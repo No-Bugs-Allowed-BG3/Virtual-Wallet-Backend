@@ -239,3 +239,12 @@ async def user_can_make_transactions(session:Annotated[AsyncSession,Depends(get_
         session=session,
         transaction_func=_get_current_user_from_db
     )
+
+async def admin_status(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    access_token: Annotated[str|None, Cookie()] = None,
+) -> bool:
+    user = await get_current_user(session, access_token)
+    if user.is_admin == False:
+        raise UserUnauthorized()
+    return user.is_admin

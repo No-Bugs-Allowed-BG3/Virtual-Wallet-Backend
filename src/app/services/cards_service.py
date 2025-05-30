@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.exceptions import CardAlreadyExists
+from app.api.exceptions import CardAlreadyExists, NoCards
 from app.api.success_responses import CardDeleted
 from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance
 
@@ -72,5 +72,8 @@ async def read_cards(
     )
 
     cards = result.scalars().all()
+
+    if not cards:
+        raise NoCards()
 
     return [CardResponse.create(c) for c in cards]
