@@ -17,6 +17,10 @@ class ContactDeleted(CustomSuccessResponse):
     def __init__(self, detail: str = "Contact has been deleted successfully."):
         super().__init__(detail=detail, status_code=status.HTTP_202_ACCEPTED)
 
+class UserBlocked(CustomSuccessResponse):
+    def __init__(self, detail: str = "User has been blocked successfully."):
+        super().__init__(detail=detail, status_code=status.HTTP_202_ACCEPTED)
+
 class CardDeleted(CustomSuccessResponse):
     def __init__(self, detail: str = "Card has been deleted successfully."):
         super().__init__(detail=detail, status_code=status.HTTP_202_ACCEPTED)

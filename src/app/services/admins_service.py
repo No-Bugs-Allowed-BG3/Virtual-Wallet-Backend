@@ -1,5 +1,6 @@
 from typing import List
 from app.api.exceptions import TransactionNotFound, UserNotFound
+from app.api.success_responses import UserBlocked
 from app.persistence.categories.categories import Category
 from app.persistence.users.users import User
 from app.persistence.transactions.transaction import Transaction
@@ -7,8 +8,10 @@ from app.persistence.currencies.currency import Currency
 from app.schemas.transaction import AdminTransactionResponse
 from app.schemas.user import AdminUserResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import UUID, select
 from sqlalchemy.orm import aliased
+
+from app.services.users_service import _get_user_by_id
 
 
 async def read_users(
@@ -56,3 +59,23 @@ async def read_transactions(
         raise TransactionNotFound()
 
     return transactions
+
+async def block_user(
+        db: AsyncSession,
+        user_id: UUID
+):
+    result = await _get_user_by_id(db, user_id)
+    user_obj = result.scalar_one()
+    user_obj.is_blocked = True
+    await db.commit()
+    return UserBlocked()
+
+async def unblock_user(
+        db: AsyncSession,
+        user_id: UUID
+):
+    result = await _get_user_by_id(db, user_id)
+    user_obj = result.scalar_one()
+    user_obj.is_blocked = False
+    await db.commit()
+    return UserBlocked()

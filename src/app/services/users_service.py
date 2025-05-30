@@ -196,6 +196,20 @@ async def get_user_settings(current_user:UserResponse,
         transaction_func=_get_settings,
     )
 
+async def _get_user_by_id(
+        db: AsyncSession,
+        user_id: UUID
+) -> User:
+    result = await db.execute(
+        select(User)
+        .where(
+            User.id == user_id
+        )
+    )
+    if result is None:
+        raise UserNotFound()
+    return result
+
 async def _get_user_id_by_username(
         db: AsyncSession,
         username: str 
