@@ -1,4 +1,4 @@
-from app.api.exceptions import USER_NOT_FOUND
+from app.api.exceptions import UserNotFound
 from app.persistence.users.users import User
 from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -208,7 +208,7 @@ async def _get_user_id_by_username(
     )
     user_id = result.scalar_one_or_none()
     if user_id is None:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     return user_id
 
 async def _get_user_id_by_phone(
@@ -223,7 +223,7 @@ async def _get_user_id_by_phone(
     )
     user_id = result.scalar_one_or_none()
     if user_id is None:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     return user_id
 
 async def _get_user_id_by_email(
@@ -238,5 +238,5 @@ async def _get_user_id_by_email(
     )
     user_id = result.scalar_one_or_none()
     if user_id is None:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     return user_id
