@@ -27,4 +27,5 @@ class Transaction(Base):
     sender: Mapped["User"] = relationship("User", foreign_keys=[sender_id], backref="sent_transactions")
     receiver: Mapped["User"] = relationship("User", foreign_keys=[receiver_id], backref="received_transactions")
     currency: Mapped["Currency"] = relationship("Currency", backref="transactions")
-    category: Mapped["Category"] = relationship("Category", backref="transactions")
+    category: Mapped["Category"] = relationship("Category", back_populates="transactions")
+
