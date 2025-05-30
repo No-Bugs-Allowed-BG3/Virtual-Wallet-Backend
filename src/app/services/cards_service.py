@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.exceptions import CardAlreadyExists
+from app.api.success_responses import CardDeleted
 from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance
 
 from app.persistence.cards.card import Card
@@ -54,6 +55,7 @@ async def delete_card(
     card = result.scalar_one()
     card.is_deleted = True
     await db.commit()
+    return CardDeleted()
 
 async def read_cards(
         db: AsyncSession,

@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import UserNotFound, ContactAlreadyExists, ContactNotFound
 
+from app.api.success_responses import ContactDeleted
 from app.persistence.contacts.contact import Contact
 from app.persistence.users.users import User
 from app.schemas.contact import ContactResponse
@@ -96,10 +97,11 @@ async def delete_contact(
         db: AsyncSession,
         user_id: UUID,
         contact_id: UUID
-) -> None:
+):
     result = await _get_contact(db, user_id, contact_id)
     if not result:
         raise UserNotFound()
     contact = result.scalar_one()
     contact.is_deleted = True
     await db.commit()
+    return ContactDeleted()
