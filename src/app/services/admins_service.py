@@ -1,6 +1,6 @@
 from typing import List
 from app.api.exceptions import TransactionNotFound, UserNotFound
-from app.api.success_responses import UserBlocked
+from app.api.success_responses import UserBlocked, UserUnblocked
 from app.persistence.categories.categories import Category
 from app.persistence.users.users import User
 from app.persistence.transactions.transaction import Transaction
@@ -63,7 +63,7 @@ async def read_transactions(
 async def block_user(
         db: AsyncSession,
         user_id: UUID
-):
+) -> UserBlocked:
     result = await _get_user_by_id(db, user_id)
     user_obj = result.scalar_one()
     user_obj.is_blocked = True
@@ -73,9 +73,9 @@ async def block_user(
 async def unblock_user(
         db: AsyncSession,
         user_id: UUID
-):
+) -> UserUnblocked:
     result = await _get_user_by_id(db, user_id)
     user_obj = result.scalar_one()
     user_obj.is_blocked = False
     await db.commit()
-    return UserBlocked()
+    return UserUnblocked()
