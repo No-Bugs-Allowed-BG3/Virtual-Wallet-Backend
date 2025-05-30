@@ -52,9 +52,7 @@ async def read_contacts(
 ) -> List[ContactResponse]:
     stmt = (
         select(
-            User.username,
-            User.phone,
-            User.email
+            User.username
         )
         .join(Contact, Contact.contact_id == User.id)
         .where(
@@ -67,9 +65,7 @@ async def read_contacts(
 
     contacts = [
         ContactResponse(
-            username=row.username,
-            phone=row.phone,
-            email=row.email,
+            username=row.username
         )
         for row in result.fetchall()
     ]
