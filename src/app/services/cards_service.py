@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import CARD_ALREADY_EXISTS, CARD_NOT_FOUND
 from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance
-
+from datetime import *
 from app.persistence.cards.card import Card
 from app.schemas.card import CardCreate, CardResponse
 
@@ -71,3 +71,25 @@ async def read_cards(
     cards = result.scalars().all()
 
     return [CardResponse.create(c) for c in cards]
+
+async def _card_belongs_to_user(db: AsyncSession, user_id:UUID, card_id:UUID) -> bool:
+    balance_ids = await _get_balance_ids_by_user_id(db, user_id)
+    result = await db.execute(select(Card)
+                              .where(Card.id == card_id)
+                              .where(Card.balance_id.in_(balance_ids))
+                              .where(Card.is_deleted.is_(False))
+                              )
+    card = result.scalar_one_or_none()
+    return card is not None
+
+async def _card_is_expired(db: AsyncSession, user_id: UUID, card_id: UUID):
+    if not await _card_belongs_to_user(db, user_id, card_id):
+        raise HTTPException(status_code=403, detail="Card does not belong to user")
+
+    stmt = select(Card).where(Card.id == card_id, Card.expiration_date < datetime.now())
+    checked_card = await db.execute(stmt)
+    result = checked_card.scalar_one_or_none()
+    if result:
+        return True
+    else:
+        return False
