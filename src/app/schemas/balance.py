@@ -3,6 +3,8 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 from app.persistence.balances.balance import Balance
 
+class BalanceCreate(BaseModel):
+    amount: Decimal
 
 class BalanceResponse(BaseModel):
     id: UUID
@@ -16,3 +18,4 @@ class BalanceResponse(BaseModel):
             amount=obj.amount,
             currency_code=obj.currency.code
         )
+

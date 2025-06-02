@@ -25,6 +25,7 @@ class Transaction(Base):
     status: Mapped[str] = mapped_column(String, nullable=False)
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     created_date: Mapped[Date] = mapped_column(Date)
+    description: Mapped[str] = mapped_column(String, nullable=True)
 
     sender: Mapped["User"] = relationship("User", foreign_keys=[sender_id], backref="sent_transactions")
     receiver: Mapped["User"] = relationship("User", foreign_keys=[receiver_id], backref="received_transactions")

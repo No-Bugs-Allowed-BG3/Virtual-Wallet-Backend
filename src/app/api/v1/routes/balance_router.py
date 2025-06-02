@@ -5,7 +5,7 @@ from app.persistence.db import get_session
 
 from app.persistence.balances.balance import Balance
 from app.schemas.balance import BalanceCreate, BalanceResponse
-from app.services.balances_service import *
+from app.services.balances_service import _create_balance
 
 router = APIRouter(prefix="/balances", tags=["balances"])
 
@@ -16,4 +16,4 @@ async def create_balance_endpoint(
     balance_in: BalanceCreate,
     db: AsyncSession = Depends(get_session)
 ):
-    return await create_balance(db, user_id, currency_id, balance_in)
+    return await _create_balance(db, user_id, currency_id, balance_in)

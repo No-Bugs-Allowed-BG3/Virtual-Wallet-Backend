@@ -10,6 +10,31 @@ from fastapi.security import OAuth2PasswordRequestForm
 token_router = APIRouter()
 
 
+##@token_router.post("/")
+#async def _login_user(
+    #login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    #session: AsyncSession = Depends(get_session),
+#) -> JSONResponse:
+    #usr = UserLogin.from_oauth2_form_data(login_data)
+    #user_tokens = await login_user(session=session, usr=usr)
+    #if user_tokens:
+        #response = JSONResponse(content={"result": "success"})
+        #response.set_cookie(
+            #key="access_token",
+            #value=user_tokens.access.access_token,
+            #expires=user_tokens.access.expiry,
+            #httponly=True,
+        #)
+        #response.set_cookie(
+            #key="refresh_token",
+            #value=user_tokens.refresh.access_token,
+            #expires=user_tokens.refresh.expiry,
+            #httponly=True,
+        #)
+    #else:
+        #response = JSONResponse(content={"result": "failure"})
+    #return response
+
 @token_router.post("/")
 async def _login_user(
     login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -17,8 +42,13 @@ async def _login_user(
 ) -> JSONResponse:
     usr = UserLogin.from_oauth2_form_data(login_data)
     user_tokens = await login_user(session=session, usr=usr)
+    
     if user_tokens:
-        response = JSONResponse(content={"result": "success"})
+        response = JSONResponse(content={
+            "result": "success",
+            "access_token": user_tokens.access.access_token,
+            "refresh_token": user_tokens.refresh.access_token
+        })
         response.set_cookie(
             key="access_token",
             value=user_tokens.access.access_token,
@@ -33,4 +63,5 @@ async def _login_user(
         )
     else:
         response = JSONResponse(content={"result": "failure"})
+    
     return response

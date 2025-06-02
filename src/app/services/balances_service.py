@@ -4,29 +4,34 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from app.api.exceptions import BALANCE_NOT_FOUND, BALANCE_ALREADY_EXISTS
-from app.schemas.balance import BalanceResponse
+from app.schemas.balance import BalanceResponse, BalanceCreate
 from app.persistence.balances.balance import Balance
 from .currencies_service import _get_currency_id_by_currency_code
 
 async def _create_balance(
-        db: AsyncSession,
-        user_id: UUID,
-        currency_code: str     
+    db: AsyncSession,
+    user_id: UUID,
+    currency_id: UUID,
+    balance_in: BalanceCreate
 ) -> BalanceResponse:
-    currency_id = await _get_currency_id_by_currency_code(db, currency_code)
-    balance = Balance(user_id=user_id,currency_id=currency_id)
+    balance = Balance(
+        user_id=user_id,
+        currency_id=currency_id,
+        amount=balance_in.amount,
+    )
     db.add(balance)
     try:
         await db.flush()
+        await db.refresh(balance, attribute_names=["currency"])
         await db.commit()
-        await db.refresh(balance)
     except IntegrityError:
         await db.rollback()
         raise BALANCE_ALREADY_EXISTS
+
     return BalanceResponse(
         id=balance.id,
         amount=balance.amount,
-        currency_code=currency_code,
+        currency_code=balance.currency.code,
     )
 
 async def _get_balance_ids_by_user_id(

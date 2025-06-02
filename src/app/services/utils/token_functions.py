@@ -166,8 +166,8 @@ async def get_current_user(session:Annotated[AsyncSession,Depends(get_session)],
         )
 
     return await process_db_transaction(
+        transaction_func=_get_current_user_from_db,
         session=session,
-        transaction_func=_get_current_user_from_db
     )
 
 async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->bool:
