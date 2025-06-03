@@ -17,3 +17,9 @@ async def user_to_user_transaction(
     transaction = await create_user_to_user_transaction(db, current_user.id, transaction_data)
     return transaction
 
+@router.patch("/recurring_transactions/{transaction_id}/deactivate")
+async def deactivate_recurring(transaction_id: UUID, db: AsyncSession = Depends(get_session)):
+    transaction = await deactivate_recurring_transaction(db, transaction_id)
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return "Recurring transaction deactivated!"
