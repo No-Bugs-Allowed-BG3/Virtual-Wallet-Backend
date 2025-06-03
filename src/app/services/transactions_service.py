@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.persistence.transactions.transaction import Transaction
 from app.persistence.recurring_transactions.recurring_transaction import RecurringTransaction
 from app.persistence.balances.balance import Balance
@@ -81,9 +81,49 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     )
     
     db.add(transaction)
-    sender_balance.amount -= transaction_data.amount
-    receiver_balance.amount += transaction_data.amount
     
+    await db.commit()
+    await db.refresh(transaction)
+
+    return transaction
+
+async def accept_transaction(db: AsyncSession, transacton_id: UUID):
+    result = await db.execute(select(Transaction).where(Transaction.id == transacton_id))
+    transaction = result.scalar_one_or_none()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if transaction.status != "pending":
+        raise HTTPException(status_code=400, detail="Transaction already processed")
+    
+    stmt_sender = select(Balance).where(
+        Balance.user_id == transaction.sender_id, 
+        Balance.currency_id == transaction.currency_id)
+    result = await db.execute(stmt_sender)
+    sender_balance = result.scalar_one_or_none()
+    if not sender_balance:
+        raise HTTPException(status_code=404, detail="No balance in this currency")
+    
+    stmt_receiver = select(Balance).where(
+        Balance.user_id == transaction.receiver_id,
+        Balance.currency_id == transaction.currency_id
+    )
+    result = await db.execute(stmt_receiver)
+    receiver_balance = result.scalar_one_or_none()
+    if not receiver_balance:
+        receiver_balance = Balance(
+            user_id=transaction.receiver_id,
+            currency_id=transaction.currency_id,
+            amount=Decimal("0.0")
+        )
+        db.add(receiver_balance)
+        await db.flush()
+    
+    if sender_balance.amount < transaction.amount:
+        raise HTTPException(status_code=400, detail="Insufficient funds at approval time")
+
+    sender_balance.amount -= transaction.amount
+    receiver_balance.amount += transaction.amount
+
     transaction.status = "completed"
     await db.commit()
     await db.refresh(transaction)
@@ -91,6 +131,7 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     return transaction
 
 
+    
 async def deactivate_recurring_transaction(db: AsyncSession, transaction_id: UUID):
     result = await db.execute(select(RecurringTransaction).where(RecurringTransaction.id == transaction_id))
     recurring_transaction = result.scalar_one_or_none()
@@ -101,3 +142,39 @@ async def deactivate_recurring_transaction(db: AsyncSession, transaction_id: UUI
     await db.commit()
     await db.refresh(recurring_transaction)
     return recurring_transaction
+
+
+async def view_all_transactions(db:AsyncSession, skip: int = 0, limit: int = 5):
+    total_query = await db.execute(select(func.count()).select_from(Transaction))
+    total = total_query.scalar_one()
+    result = await db.execute(select(Transaction).offset(skip).limit(limit))
+    transactions = result.scalars().all()
+
+    current_page = (skip // limit) + 1
+    has_next = skip + limit < total
+
+    return {
+        "transactions":transactions,
+        "total":total,
+        "has_next": has_next,
+        "page":current_page,
+        "per_page":limit
+        }
+
+
+async def view_all_recurring_transactions(db: AsyncSession, skip: int = 0, limit: int = 5):
+    total_query = await db.execute(select(func.count()).select_from(RecurringTransaction))
+    total = total_query.scalar_one()
+    result = await db.execute(select(RecurringTransaction).offset(skip).limit(limit))
+    recurring_transactions = result.scalars().all()
+
+    current_page = (skip // limit) + 1
+    has_next = skip + limit < total
+
+    return {
+        "recurring_transactions": recurring_transactions,
+        "total": total,
+        "has_next": has_next,
+        "page": current_page,
+        "per_page": limit
+    }
