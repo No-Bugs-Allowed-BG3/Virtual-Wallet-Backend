@@ -5,10 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.exceptions import CARD_ALREADY_EXISTS, CARD_NOT_FOUND
-from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance
+from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance, update_user_balance
 from datetime import *
 from app.persistence.cards.card import Card
 from app.schemas.card import CardCreate, CardResponse
+import httpx
+from decimal import Decimal
 
 async def create_card(
     db: AsyncSession,
@@ -90,6 +92,23 @@ async def _card_is_expired(db: AsyncSession, user_id: UUID, card_id: UUID):
     checked_card = await db.execute(stmt)
     result = checked_card.scalar_one_or_none()
     if result:
+        return True
+    else:
+        return False
+    
+
+async def load_balance_from_card(db: AsyncSession, user_id: UUID, card_number:str, amount: str, currency:str):
+    payload = {
+        "sender": card_number,
+        "number": card_number,
+        "incoming_amount": str(amount),
+        "currency": currency
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://localhost:8002/payments/", json=payload)
+
+    if response.status_code == 200 and response.json() is True:
+        await update_user_balance(db, user_id, Decimal(amount), currency)
         return True
     else:
         return False

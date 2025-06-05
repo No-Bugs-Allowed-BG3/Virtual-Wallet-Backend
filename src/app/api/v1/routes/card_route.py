@@ -1,14 +1,16 @@
+from decimal import Decimal
 from uuid import UUID
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.persistence.users.users import User
 from app.services.utils.token_functions import get_current_user
 from app.persistence.db import get_session
 from app.schemas.card import CardCreate, CardResponse
 from app.schemas.user import UserResponse
-from app.services.cards_service import create_card, delete_card, read_cards, _card_is_expired
+from app.services.cards_service import create_card, delete_card, load_balance_from_card, read_cards, _card_is_expired
 
 router = APIRouter(prefix="/users/me/cards", tags=["cards"])
 
@@ -50,3 +52,17 @@ async def get_cards(
 async def is_card_expired(card_id: UUID, current_user: UserResponse = Depends(get_current_user),
     session: AsyncSession = Depends(get_session), ) -> bool:
     return await _card_is_expired(session, current_user.id, card_id)
+
+@router.post("/cards/load")
+async def load_balance(
+    card_number: str,
+    amount: str,
+    currency: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    success = await load_balance_from_card(db, current_user.id, card_number, amount, currency)
+
+    if success:
+        return {"detail": "Balance loaded successfully."}
+    raise HTTPException(status_code=400, detail="Failed to load balance from card.")

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List
 from uuid import UUID
 from sqlalchemy import select
@@ -62,3 +63,32 @@ async def _get_balance_id_by_user_id_and_currency_code(
     )
     balance_id = result.scalars().first()
     return balance_id
+
+async def get_balance_by_user_and_currency(db: AsyncSession,user_id: UUID,currency_code: str) -> Balance | None:
+    currency_id = await _get_currency_id_by_currency_code(db, currency_code)
+
+    result = await db.execute(
+        select(Balance)
+        .where(
+            Balance.user_id == user_id,
+            Balance.currency_id == currency_id
+        )
+    )
+    return result.scalars().first()
+
+async def update_user_balance(db: AsyncSession,user_id: UUID,amount: Decimal,currency: str):
+    balance = await get_balance_by_user_and_currency(db, user_id, currency)
+
+    if balance:
+        balance.amount += amount
+    else:
+        currency_id = await _get_currency_id_by_currency_code(db, currency)
+        balance = Balance(
+            user_id=user_id,
+            currency_id=currency_id,
+            amount=amount
+        )
+        db.add(balance)
+
+    await db.commit()
+    return balance
