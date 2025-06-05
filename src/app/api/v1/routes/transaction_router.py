@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.utils.token_functions import get_current_user
 from app.persistence.db import get_session
+from app.persistence.users.users import User
 from app.schemas.transaction import TransactionCreate, TransactionResponse
 from app.services.transactions_service import *
 
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 @router.post("/transactions/user-to-user", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def user_to_user_transaction(
     transaction_data: TransactionCreate,
-    current_user = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session) 
 ):
     transaction = await create_user_to_user_transaction(db, current_user.id, transaction_data)
@@ -33,7 +34,19 @@ async def accept_transaction_endpoint(transaction_id: UUID, db: AsyncSession = D
     if current_user.id not in (accepted_transaction.sender_id, accepted_transaction.receiver_id):
         raise HTTPException(status_code=403, detail="Not authorized to accept this transaction")
 
-    return {"message": "Transaction Accepted!"}
+    return {"message": "Transaction accepted"}
+
+@router.post("/transactions/{transaction_id}/reject")
+async def reject_transaction_endpoint(transaction_id: UUID, db: AsyncSession = Depends(get_session), current_user = Depends(get_current_user)):
+    rejected_transaction = await reject_transaction(db, transaction_id)
+    if not reject_transaction:
+        raise HTTPException(status_code=404, detail= "Transaction not found")
+    
+    if current_user.id not in (rejected_transaction.sender_id,rejected_transaction.receiver_id):
+        raise HTTPException(status_code=403, detail="Not authorized to reject this transaction")
+    
+    return {"message": "Transaction rejected"}
+
 
 @router.get("/all_transactions")
 async def get_all_transactions(

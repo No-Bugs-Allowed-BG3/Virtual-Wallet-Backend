@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.persistence.transactions.transaction import Transaction
     from app.persistence.recurring_transactions.recurring_transaction import RecurringTransaction
     from app.persistence.contacts.contact import Contact
+    from app.persistence.categories.categories import Category
 
 class User(Base):
     """
@@ -67,4 +68,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
         foreign_keys="[Contact.user_id]"
+    )
+
+    categories: Mapped[List["Category"]] = relationship(
+    "Category",
+    back_populates="user",
+    cascade="all, delete-orphan"
     )

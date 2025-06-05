@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.persistence.db import get_session, initialize_database
+from app.persistence.db import AsyncSessionLocal, get_session, initialize_database
 from app.persistence.initial_data import create_predefined_categories, load_initial_currencies
 
 
@@ -31,9 +31,10 @@ async def lifespan(app: FastAPI):
     await initialize_database()
 
     await load_initial_currencies()
-
-    async for session in get_session():
+    async with AsyncSessionLocal() as session:
         await create_predefined_categories(session)
+    # async for session in get_session():
+    #     await create_predefined_categories(session)
     yield
 
 
