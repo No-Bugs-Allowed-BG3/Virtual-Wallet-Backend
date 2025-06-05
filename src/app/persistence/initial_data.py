@@ -23,7 +23,7 @@ async def create_predefined_categories(session):
     to_add = []
     for name in PREDEFINED_CATEGORIES:
         if name not in existing_names:
-            to_add.append(Category(id=uuid.uuid4(), name=name))
+            to_add.append(Category(id=uuid.uuid4(), name=name, is_default = True))
 
     if to_add:
         session.add_all(to_add)

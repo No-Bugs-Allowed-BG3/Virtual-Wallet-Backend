@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import asc, desc, select, func
 from app.persistence.categories.categories import Category
 from app.persistence.transactions.transaction import Transaction
 from app.persistence.recurring_transactions.recurring_transaction import RecurringTransaction
@@ -50,13 +50,16 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
         raise HTTPException(status_code=400, detail="Category must be specified by id or name")
 
     if transaction_data.is_recurring:
+        if not transaction_data.interval_days or not transaction_data.next_run_date:
+            raise HTTPException(status_code=400, detail="Recurring transactions must have interval type and next execution date")
+        interval_type = IntervalType.get_interval_type_from_days(transaction_data.interval_days)
         await create_recurring_transaction(
             db=db,
             sender_id=sender_id,
             receiver_id=receiver.id,
             amount=transaction_data.amount,
             currency_id=transaction_data.currency_id,
-            interval_days=transaction_data.interval_days,
+            interval_type=interval_type,
             next_run_date=transaction_data.next_run_date,
             description=transaction_data.description,
         )
@@ -136,10 +139,13 @@ async def deactivate_recurring_transaction(db: AsyncSession, transaction_id: UUI
     return recurring_transaction
 
 
-async def view_all_transactions(db:AsyncSession, skip: int = 0, limit: int = 5):
+async def view_all_transactions(db:AsyncSession, skip: int = 0, limit: int = 5, sort_by: str = "date", sort_order: str = "asc"):
+    sort = {"date": Transaction.created_date,
+            "amount": Transaction.amount}[sort_by]
+    order_func = asc if sort_order == "asc" else desc
     total_query = await db.execute(select(func.count()).select_from(Transaction))
     total = total_query.scalar_one()
-    result = await db.execute(select(Transaction).offset(skip).limit(limit))
+    result = await db.execute(select(Transaction).order_by(order_func(sort)).offset(skip).limit(limit))
     transactions = result.scalars().all()
 
     current_page = (skip // limit) + 1
@@ -251,11 +257,10 @@ async def create_recurring_transaction(
     receiver_id: UUID,
     amount: Decimal,
     currency_id: UUID,
-    interval_days: int,
+    interval_type: IntervalType,
     next_run_date: date | None,
     description: str | None = None,
 ):
-    interval_type = IntervalType.get_interval_type_from_days(interval_days)
     recurring_transaction = RecurringTransaction(
         sender_id=sender_id,
         receiver_id=receiver_id,

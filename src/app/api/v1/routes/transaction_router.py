@@ -52,9 +52,11 @@ async def reject_transaction_endpoint(transaction_id: UUID, db: AsyncSession = D
 async def get_all_transactions(
     db: AsyncSession = Depends(get_session),
     skip: int = Query(0, ge=0),
-    limit: int = Query(5, ge=1, le=100)
+    limit: int = Query(5, ge=1, le=100),
+    sort_by: str = Query("date", pattern="^(date|amount)$"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$")
 ):
-    all_transactions = await view_all_transactions(db, skip=skip, limit=limit)
+    all_transactions = await view_all_transactions(db, skip=skip, limit=limit,sort_by=sort_by, sort_order=sort_order)
     if not all_transactions["transactions"]:
         raise HTTPException(status_code=404, detail="No available transactions")
     return all_transactions
