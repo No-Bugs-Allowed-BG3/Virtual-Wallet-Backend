@@ -14,8 +14,7 @@ router = APIRouter(prefix="/users/me/contacts", tags=["contacts"])
 
 @router.post(
     "/", 
-    response_model=ContactResponse, 
-    status_code=status.HTTP_201_CREATED
+    response_model=ContactResponse
 )
 async def add_contact(
     contact: ContactCreate,
@@ -32,8 +31,7 @@ async def add_contact(
 
 @router.get(
     "/",
-    response_model=List[ContactResponse],
-    status_code=status.HTTP_200_OK,
+    response_model=List[ContactResponse]
 )
 async def get_contacts(
     current_user: UserResponse = Depends(get_current_user),
@@ -45,8 +43,7 @@ async def get_contacts(
     )
 
 @router.delete(
-    "/{contact_id}/",
-    status_code=status.HTTP_204_NO_CONTENT
+    "/{contact_id}/"
 )
 async def remove_contact(
     contact_id: UUID,

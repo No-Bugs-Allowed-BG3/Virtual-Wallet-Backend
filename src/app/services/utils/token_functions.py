@@ -12,7 +12,7 @@ from app.services.utils.processors import process_db_transaction
 from app.schemas.user import UserResponse
 from fastapi import Cookie,Depends
 from typing import Annotated
-from app.api.exceptions import USER_UNAUTHORIZED
+from app.api.exceptions import UserUnauthorized
 
 import uuid
 
@@ -145,16 +145,16 @@ async def get_current_user(session:Annotated[AsyncSession,Depends(get_session)],
 
     """
     if not access_token:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     token_data = await decode_access_token(access_token)
     if not token_data:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     async def _get_current_user_from_db():
         statement = select(User).where(User.id==token_data.get("sub"))
         result = await session.execute(statement)
         user_object = result.scalar_one_or_none()
         if not user_object:
-            raise USER_UNAUTHORIZED
+            raise UserUnauthorized()
         return UserResponse(
             id = user_object.id,
             username=user_object.username,
@@ -182,19 +182,19 @@ async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)]
         the functionality
     """
     if not access_token:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     session_generator = get_session()
     session = await anext(session_generator)
     token_data = await decode_access_token(access_token)
     if not token_data:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
 
     async def _get_current_user_from_db():
         statement = select(User).where(User.id == token_data.get("sub"))
         result = await session.execute(statement)
         user_object = result.scalar_one_or_none()
         if not user_object:
-            raise USER_UNAUTHORIZED
+            raise UserUnauthorized()
         if user_object.is_activated and user_object.is_verified:
             return True
         return False
@@ -216,19 +216,19 @@ async def user_can_make_transactions(session:Annotated[AsyncSession,Depends(get_
         transactions
     """
     if not access_token:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     session_generator = get_session()
     session = await anext(session_generator)
     token_data = await decode_access_token(access_token)
     if not token_data:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
 
     async def _get_current_user_from_db():
         statement = select(User).where(User.id == token_data.get("sub"))
         result = await session.execute(statement)
         user_object = result.scalar_one_or_none()
         if not user_object:
-            raise USER_UNAUTHORIZED
+            raise UserUnauthorized()
         if (user_object.is_activated and
                 user_object.is_verified and
                 not user_object.is_blocked):
@@ -239,3 +239,12 @@ async def user_can_make_transactions(session:Annotated[AsyncSession,Depends(get_
         session=session,
         transaction_func=_get_current_user_from_db
     )
+
+async def admin_status(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    access_token: Annotated[str|None, Cookie()] = None,
+) -> bool:
+    user = await get_current_user(session, access_token)
+    if user.is_admin == False:
+        raise UserUnauthorized()
+    return user.is_admin

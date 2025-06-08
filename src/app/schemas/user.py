@@ -1,4 +1,4 @@
-from app.api.exceptions import PASSWORD_INCORRECT_FORMAT,USERNAME_INCORRECT_FORMAT
+from app.api.exceptions import PasswordIncorrectFormat, UsernameIncorrectFormat
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel,EmailStr,field_validator
 from pydantic.types import StringConstraints
@@ -26,6 +26,21 @@ class UserResponse(BaseModel):
             is_admin=obj.is_admin
         )
 
+class AdminUserResponse(BaseModel):
+    id: uuid.UUID
+    username: str
+    email: str
+    phone: str
+    is_blocked:bool
+    is_activated:bool
+    is_verified:bool
+    is_admin:bool
+    avatar:str|None=None
+
+    class Config:
+        orm_mode = True
+
+    
 class UserSettings(BaseModel):
     email:EmailStr
     phone:Annotated[str,StringConstraints(max_length=13,min_length=10,pattern=r"^\+?(\d{10}|\d{12})$")]
@@ -61,7 +76,7 @@ class UserCreate(UserSettings):
     @classmethod
     def _validate_username(cls,value:str)->str:
         if len(value) < 2 or len(value) > 20:
-            raise USERNAME_INCORRECT_FORMAT
+            raise UsernameIncorrectFormat()
         return value
 
     password:str
@@ -77,7 +92,7 @@ class UserCreate(UserSettings):
         ) or (
             len(value) < 8
         ):
-            raise PASSWORD_INCORRECT_FORMAT
+            raise PasswordIncorrectFormat()
         return value
 
 class UserLogin(BaseModel):
@@ -105,6 +120,6 @@ class UserPasswordCollection(BaseModel):
         ) or (
             len(value) < 8
         ):
-            raise PASSWORD_INCORRECT_FORMAT
+            raise PasswordIncorrectFormat()
         return value
     old_password: str

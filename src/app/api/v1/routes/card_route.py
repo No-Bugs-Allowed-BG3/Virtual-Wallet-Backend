@@ -17,8 +17,7 @@ router = APIRouter(prefix="/users/me/cards", tags=["cards"])
 
 @router.post(
     "/",
-    response_model=CardResponse,
-    status_code=status.HTTP_201_CREATED,
+    response_model=CardResponse
 )
 async def register_card(
     card_in: CardCreate,
@@ -28,19 +27,17 @@ async def register_card(
     return await create_card(session, current_user.id, card_in)
 
 @router.delete(
-    "/{card_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    "/{card_id}"
 )
 async def remove_card(
     card_id: UUID,
     current_user: UserResponse = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> None:
-    await delete_card(session, current_user.id, card_id)
+):
+    return await delete_card(session, current_user.id, card_id)
 
 @router.get(
-    "/",
-    status_code=status.HTTP_200_OK,
+    "/"
 )
 async def get_cards(
     current_user: UserResponse = Depends(get_current_user),

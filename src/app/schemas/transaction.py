@@ -1,8 +1,25 @@
-from pydantic import BaseModel, Field
-from uuid import UUID
-from decimal import Decimal
-from app.core.enums.enums import IntervalType
 from datetime import date
+from decimal import Decimal
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+from app.core.enums.enums import IntervalType
+
+
+class AdminTransactionResponse(BaseModel):
+    id: UUID
+    sender_username: str
+    currency_code: str
+    receiver_username: str
+    category_name: str
+    amount: Decimal
+    status: str
+    is_recurring: bool
+    created_date: date
+
+    class Config:
+        orm_mode = True
 
 class TransactionCreate(BaseModel):
     receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")

@@ -1,12 +1,12 @@
-from typing import Any, List
+from typing import List
 from uuid import UUID
-import uuid
 from fastapi import HTTPException
 from sqlalchemy import select, update, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.exceptions import USER_NOT_FOUND, CONTACT_ALREADY_EXISTS
+from app.api.exceptions import UserNotFound, ContactAlreadyExists, ContactNotFound
 
+from app.api.success_responses import ContactDeleted
 from app.persistence.contacts.contact import Contact
 from app.persistence.users.users import User
 from app.schemas.contact import ContactResponse
@@ -35,7 +35,7 @@ async def create_contact(
 ) -> ContactResponse:
     contact_id = await _find_user_id(db, username, phone, email)
     if not contact_id:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     contact = Contact(user_id=user_id,contact_id=contact_id)
     db.add(contact)
     try:
@@ -44,7 +44,7 @@ async def create_contact(
         await db.refresh(contact)
     except IntegrityError:
         await db.rollback()
-        raise CONTACT_ALREADY_EXISTS
+        raise ContactAlreadyExists()
     await db.refresh(contact, ["contact"])
     return ContactResponse.create(contact)
 
@@ -54,9 +54,7 @@ async def read_contacts(
 ) -> List[ContactResponse]:
     stmt = (
         select(
-            User.username,
-            User.phone,
-            User.email
+            User.username
         )
         .join(Contact, Contact.contact_id == User.id)
         .where(
@@ -69,12 +67,13 @@ async def read_contacts(
 
     contacts = [
         ContactResponse(
-            username=row.username,
-            phone=row.phone,
-            email=row.email,
+            username=row.username
         )
         for row in result.fetchall()
     ]
+
+    if not contacts:
+        raise ContactNotFound()
 
     return contacts
 
@@ -91,21 +90,24 @@ async def _get_contact(
             Contact.is_deleted.is_(False)
         )
     )
+    if not result:
+        raise ContactNotFound()
     return result
 
 async def delete_contact(
         db: AsyncSession,
         user_id: UUID,
         contact_id: UUID
-) -> None:
+):
     result = await _get_contact(db, user_id, contact_id)
     if not result:
-        raise USER_NOT_FOUND
+        raise UserNotFound()
     contact = result.scalar_one()
     contact.is_deleted = True
     await db.commit()
+    return ContactDeleted()
 
-async def search_contact(db: AsyncSession, user_id: uuid.UUID, query: str):
+async def search_contact(db: AsyncSession, user_id: UUID, query: str):
     stmt = (
         select(User)
         .join(Contact, Contact.contact_id == User.id)
