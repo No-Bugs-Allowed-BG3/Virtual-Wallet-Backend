@@ -10,14 +10,13 @@ from app.persistence.balances.balance import Balance
 from app.persistence.users.users import User
 from app.schemas.transaction import TransactionCreate
 from app.services.users_service import *
-from app.schemas.transaction import RecurringTransactionCreate
 from app.schemas.category import CategoryCreate
 from app.services.categories_service import create_category
 from app.core.enums.enums import IntervalType
 from app.services.categories_service import create_category
 
 from uuid import UUID
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 

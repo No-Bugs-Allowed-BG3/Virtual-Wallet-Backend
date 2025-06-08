@@ -4,9 +4,9 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.persistence.db import AsyncSessionLocal, get_session, initialize_database
+from app.persistence.db import AsyncSessionLocal, initialize_database
 from app.persistence.initial_data import create_predefined_categories, load_initial_currencies
-
+from fastapi.middleware.cors import CORSMiddleware
 
 def _create_app() -> FastAPI:
     app_ = FastAPI(
@@ -19,6 +19,18 @@ def _create_app() -> FastAPI:
     app_.include_router(
         api_router,
         prefix=settings.API_V1_STR,
+    )
+
+    allowed_origins = [
+        "http://localhost:3000"
+    ]
+
+    app_.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins, 
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],   
     )
     return app_
 
