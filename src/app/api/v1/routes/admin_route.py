@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 
 from fastapi import APIRouter, Depends
@@ -32,11 +33,26 @@ async def get_users(
 )
 async def get_transactions(
     admin_status: bool = Depends(admin_status),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
+    start_date: date | None = None,
+    end_date: date | None = None,
+    sender_username: str | None = None,
+    receiver_username: str | None = None,
+    direction: str | None = None,
+    user_id: UUID | None = None,
+    limit: int = 20,
+    offset: int = 0
 ) -> List[AdminTransactionResponse]:
     if not admin_status:
         raise UserUnauthorized()
-    return await read_transactions(db=db)
+    return await read_transactions(db=db,start_date=start_date,
+        end_date=end_date,
+        sender_username=sender_username,
+        receiver_username=receiver_username,
+        direction=direction,
+        user_id=user_id,
+        limit=limit,
+        offset=offset)
 
 @router.post(
     "/registered_users/{user_id}"

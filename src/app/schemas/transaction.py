@@ -58,3 +58,13 @@ class RecurringTransactionCreate(BaseModel):
     end_date: date | None = Field(None, description="Optional end date for the recurring transactions")
     occurrences: int | None = Field(None, gt=0, description="Optional number of occurrences, alternative to end_date")
     is_active: bool = True
+
+class TransactionFilter(BaseModel):
+    start_date: date | None = None
+    end_date: date | None = None
+    sender_username: str | None = None
+    receiver_username: str | None = None
+    direction: str | None = Field(None, description="incoming or outgoing")
+    user_id: UUID | None = None
+    limit: int = 20
+    offset: int = 0

@@ -46,8 +46,6 @@ async def _login_user(
     if user_tokens:
         response = JSONResponse(content={
             "result": "success",
-            "access_token": user_tokens.access.access_token,
-            "refresh_token": user_tokens.refresh.access_token
         })
         response.set_cookie(
             key="access_token",

@@ -24,13 +24,13 @@ from app.services.users_service import _get_user_by_id
 
 async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):
 
-    sender = await _get_user_by_id(db, sender_id)
-    if sender.is_blocked:
-        raise HTTPException(status_code=403, detail="User is blocked")
+    # sender = await _get_user_by_id(db, sender_id)
+    # if sender.is_blocked:
+    #     raise HTTPException(status_code=403, detail="User is blocked")
     
     receiver = await get_receiver_by_username(db, transaction_data.receiver_username)
-    if receiver.is_blocked:
-        raise HTTPException(status_code=403, detail="This user cannot receive funds")
+    # if receiver.is_blocked:
+    #     raise HTTPException(status_code=403, detail="This user cannot receive funds")
     if receiver.id == sender_id:
         raise HTTPException(status_code=400, detail="Cannot send money to yourself")
 
