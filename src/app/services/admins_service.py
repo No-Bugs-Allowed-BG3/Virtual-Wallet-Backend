@@ -1,4 +1,6 @@
 from typing import List
+
+from fastapi import HTTPException
 from app.api.exceptions import TransactionNotFound, UserNotFound
 from app.api.success_responses import UserBlocked, UserUnblocked
 from app.persistence.categories.categories import Category
@@ -27,9 +29,22 @@ async def read_users(
     return users
 
 
+from datetime import date
+from uuid import UUID
+from typing import List
+
 async def read_transactions(
-    db: AsyncSession
+    db: AsyncSession,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    sender_username: str | None = None,
+    receiver_username: str | None = None,
+    direction: str | None = None,
+    user_id: UUID | None = None,
+    limit: int = 20,
+    offset: int = 0,
 ) -> List[AdminTransactionResponse]:
+
 
     Sender = aliased(User)
     Receiver = aliased(User)
@@ -52,8 +67,26 @@ async def read_transactions(
         .join(Category,  Transaction.category_id == Category.id)
     )
 
+    if start_date:
+        stmt = stmt.where(Transaction.created_date >= start_date)
+    if end_date:
+        stmt = stmt.where(Transaction.created_date <= end_date)
+    if sender_username:
+        stmt = stmt.where(Sender.username == sender_username)
+    if receiver_username:
+        stmt = stmt.where(Receiver.username == receiver_username)
+
+    if direction and user_id:
+        if direction == "incoming":
+            stmt = stmt.where(Transaction.receiver_id == user_id)
+        elif direction == "outgoing":
+            stmt = stmt.where(Transaction.sender_id == user_id)
+
+    stmt = stmt.limit(limit).offset(offset)
+
     result = await db.execute(stmt)
-    transactions  = result.scalars().all()
+    rows = result.all()
+    transactions = [AdminTransactionResponse(**dict(row)) for row in rows]
 
     if not transactions:
         raise TransactionNotFound()
@@ -79,3 +112,11 @@ async def unblock_user(
     user_obj.is_blocked = False
     await db.commit()
     return UserUnblocked()
+
+async def get_transaction_by_id(db: AsyncSession, transaction_id: UUID) -> Transaction:
+    stmt = select(Transaction).where(Transaction.id == transaction_id)
+    result = await db.execute(stmt)
+    transaction = result.scalar_one_or_none()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return transaction

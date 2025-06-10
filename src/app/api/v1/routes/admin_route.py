@@ -28,7 +28,7 @@ async def get_users(
 
 @router.get(
     "/created_transactions",
-    response_model=List[AdminUserResponse]
+    response_model=List[AdminTransactionResponse]
 )
 async def get_transactions(
     admin_status: bool = Depends(admin_status),

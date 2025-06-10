@@ -16,7 +16,7 @@ router = APIRouter(prefix="/users/me/cards", tags=["cards"])
 
 
 @router.post(
-    "/",
+    "",
     response_model=CardResponse
 )
 async def register_card(
@@ -37,7 +37,7 @@ async def remove_card(
     return await delete_card(session, current_user.id, card_id)
 
 @router.get(
-    "/"
+    ""
 )
 async def get_cards(
     current_user: UserResponse = Depends(get_current_user),

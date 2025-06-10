@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_SECRET_KEY: str = secrets.token_urlsafe(32)
     VERSION: str = "0.1.0"
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60
 
     TOKEN_ALGORITHM:str = "HS256"

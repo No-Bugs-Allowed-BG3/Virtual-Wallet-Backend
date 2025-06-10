@@ -21,7 +21,7 @@ async def create_card(
 ) -> CardResponse:
     balance_id = await _get_balance_id_by_user_id_and_currency_code(db, user_id, card_in.currency_code)
     if not balance_id:
-        balance = await _create_balance(db, user_id, card_in.currency_code)
+        balance = await _create_balance(db, user_id,card_in.amount)
         balance_id = balance.id
     card = Card(
         balance_id=balance_id, 

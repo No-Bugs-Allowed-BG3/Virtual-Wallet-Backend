@@ -8,6 +8,8 @@ from app.persistence.db import AsyncSessionLocal, initialize_database
 from app.persistence.initial_data import create_predefined_categories, load_initial_currencies
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.services.utils.init_admin_user import create_admin_user
+
 def _create_app() -> FastAPI:
     app_ = FastAPI(
         title=settings.PROJECT_NAME,
@@ -45,8 +47,7 @@ async def lifespan(app: FastAPI):
     await load_initial_currencies()
     async with AsyncSessionLocal() as session:
         await create_predefined_categories(session)
-    # async for session in get_session():
-    #     await create_predefined_categories(session)
+        await create_admin_user(session)
     yield
 
 

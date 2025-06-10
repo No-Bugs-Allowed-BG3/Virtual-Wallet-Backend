@@ -4,9 +4,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from app.api.exceptions import BALANCE_ALREADY_EXISTS
 from app.schemas.balance import BalanceResponse, BalanceCreate
-from app.api.exceptions import BalanceNotFound
+from app.api.exceptions import BalanceAlreadyExists, BalanceNotFound
 from app.schemas.balance import BalanceResponse
 from app.persistence.balances.balance import Balance
 from .currencies_service import _get_currency_id_by_currency_code
@@ -29,7 +28,7 @@ async def _create_balance(
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        raise BALANCE_ALREADY_EXISTS
+        raise BalanceAlreadyExists()
 
     return BalanceResponse(
         id=balance.id,
