@@ -107,7 +107,7 @@ async def delete_contact(
     await db.commit()
     return ContactDeleted()
 
-async def search_contact(db: AsyncSession, user_id: UUID, query: str):
+async def search_contact(db: AsyncSession, user_id: UUID, search_by: str):
     stmt = (
         select(User)
         .join(Contact, Contact.contact_id == User.id)
@@ -115,16 +115,16 @@ async def search_contact(db: AsyncSession, user_id: UUID, query: str):
             Contact.user_id == user_id,
             Contact.is_deleted.is_(False),
             or_(
-                User.username.ilike(f"%{query}%"),
-                User.phone.ilike(f"%{query}%"),
-                User.email.ilike(f"%{query}%"),
+                User.username.ilike(f"%{search_by}%"),
+                User.phone.ilike(f"%{search_by}%"),
+                User.email.ilike(f"%{search_by}%"),
             )
         )
     )
     result = await db.execute(stmt)
     users = result.scalars().all()
     if not users:
-        raise HTTPException(status_code=404, detail="No contacts found matching the query")
+        raise HTTPException(status_code=404, detail="No contacts found matching this search")
     
     contacts = [ContactResponse(
         username=user.username,
