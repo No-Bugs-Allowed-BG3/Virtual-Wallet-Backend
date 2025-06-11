@@ -100,9 +100,9 @@ async def delete_contact(
         contact_id: UUID
 ):
     result = await _get_contact(db, user_id, contact_id)
-    if not result:
+    contact = result.scalar_one_or_none()
+    if contact is None:
         raise UserNotFound()
-    contact = result.scalar_one()
     contact.is_deleted = True
     await db.commit()
     return ContactDeleted()

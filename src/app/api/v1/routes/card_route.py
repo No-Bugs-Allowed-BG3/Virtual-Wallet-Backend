@@ -58,7 +58,7 @@ async def load_balance(
     db: AsyncSession = Depends(get_session)
 ):
     success = await load_balance_from_card(
-        db, current_user.id, request.card_number, request.amount, request.currency
+        db, current_user.id, request.card_number, request.amount, request.currency_code
     )
     if success:
         return {"detail": "Balance loaded successfully."}

@@ -9,6 +9,7 @@ from app.persistence.recurring_transactions.recurring_transaction import Recurri
 from app.persistence.balances.balance import Balance
 from app.persistence.users.users import User
 from app.schemas.transaction import TransactionCreate
+from app.services.cards_service import get_card_by_number
 from app.services.users_service import *
 from app.schemas.category import CategoryCreate
 from app.services.categories_service import create_category
@@ -24,18 +25,18 @@ from app.services.users_service import _get_user_by_id
 
 async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):
 
-    # sender = await _get_user_by_id(db, sender_id)
-    # if sender.is_blocked:
-    #     raise HTTPException(status_code=403, detail="User is blocked")
+    card = await get_card_by_number(db, transaction_data.card_number)
+    if not card.balance:
+        raise HTTPException(status_code=400, detail="Card has no balance")
+    if card.balance.user_id != sender_id:
+        raise HTTPException(status_code=403, detail="Card does not belong to sender")
+    
+    sender_balance = card.balance
+    await ensure_sufficient_funds(sender_balance, transaction_data.amount)
     
     receiver = await get_receiver_by_username(db, transaction_data.receiver_username)
-    # if receiver.is_blocked:
-    #     raise HTTPException(status_code=403, detail="This user cannot receive funds")
     if receiver.id == sender_id:
         raise HTTPException(status_code=400, detail="Cannot send money to yourself")
-
-    sender_balance = await get_user_balance(db, sender_id, transaction_data.currency_id)
-    await ensure_sufficient_funds(sender_balance, transaction_data.amount)
     
     await get_or_create_receiver_balance(db, receiver.id, transaction_data.currency_id)
     

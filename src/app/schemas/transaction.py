@@ -25,12 +25,14 @@ class TransactionCreate(BaseModel):
     receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")
     category_id: UUID | None = None
     currency_id: UUID
+    card_number: str = Field(...,min_length=16, max_length=16)
     category_name: str | None = Field(None, min_length=2, max_length=50, description="Name of a new category (if not choosing from existing)")
     amount: Decimal = Field(..., gt=0, description="Amount to transfer")
     description: str = Field(..., min_length=1, max_length=200, description="Reason or note for the transaction")
     is_recurring: bool = False
     interval_days: int | None = Field(None, gt=0, description="Interval in days for recurring transactions")
     next_run_date: date | None = Field(None, description="Date for next recurring transaction execution")
+    
 
 class TransactionResponse(BaseModel):
     id: UUID

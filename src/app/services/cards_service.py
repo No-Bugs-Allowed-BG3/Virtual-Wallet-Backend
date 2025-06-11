@@ -4,9 +4,10 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from app.api.exceptions import CardAlreadyExists, NoCards
 from app.api.success_responses import CardDeleted
+from app.persistence.balances.balance import Balance
 from .balances_service import _get_balance_ids_by_user_id, _get_balance_id_by_user_id_and_currency_code, _create_balance, update_user_balance
 from datetime import *
 from app.persistence.cards.card import Card
@@ -118,3 +119,14 @@ async def load_balance_from_card(db: AsyncSession, user_id: UUID, card_number:st
         return True
     else:
         return False
+
+
+async def get_card_by_number(db: AsyncSession, card_number: str) -> Card | None:
+    result = await db.execute(
+        select(Card)
+        .options(
+            selectinload(Card.balance).selectinload(Balance.user)
+        )
+        .where(Card.card_number == card_number, Card.is_deleted == False)
+    )
+    return result.scalar_one_or_none()

@@ -62,4 +62,4 @@ async def search_contacts(
     db: AsyncSession = Depends(get_session),
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    return await search_contact(db=db, user_id=current_user.id, query=search_by)
+    return await search_contact(db=db, user_id=current_user.id, search_by=search_by)

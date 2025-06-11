@@ -7,7 +7,7 @@ class BalanceCreate(BaseModel):
     amount: Decimal
 
 class BalanceResponse(BaseModel):
-    id: UUID
+    card_number: str = Field(..., min_length=16, max_length=16)
     amount: Decimal
     currency_code: str
 
