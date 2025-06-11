@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, Field
 from datetime import date
@@ -42,3 +43,4 @@ class CardCreate(BaseModel):
         ...,
         description="Code of the currency in which this card operates."
     )
+    amount: Decimal = Field(0, ge=0, description="Initial balance amount")

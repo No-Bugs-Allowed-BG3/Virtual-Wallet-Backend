@@ -10,6 +10,7 @@ class BalanceResponse(BaseModel):
     card_number: str = Field(..., min_length=16, max_length=16)
     amount: Decimal
     currency_code: str
+    card_number: str
 
     @classmethod
     def create(cls, obj: Balance) -> "BalanceResponse":

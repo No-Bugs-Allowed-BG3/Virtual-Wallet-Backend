@@ -12,8 +12,8 @@ from app.schemas.transaction import TransactionCreate
 from app.services.cards_service import get_card_by_number
 from app.services.users_service import *
 from app.schemas.category import CategoryCreate
-from app.services.categories_service import create_category
-from app.core.enums.enums import IntervalType
+from app.services.categories_service import create_category, get_category_by_name
+from app.core.enums.enums import IntervalType, TransactionType
 from app.services.categories_service import create_category
 
 from uuid import UUID
@@ -24,6 +24,14 @@ from app.services.users_service import _get_user_by_id
 
 
 async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):
+    
+    sender = await _get_user_by_id(db, sender_id)
+                                     
+    if not sender.is_activated:
+        raise HTTPException(403, "Sender account is not activated")
+    
+    # if not sender.is_verified:
+    #     raise HTTPException(403, "Sender account is not verified")
 
     card = await get_card_by_number(db, transaction_data.card_number)
     if not card.balance:
@@ -81,7 +89,10 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
         status="pending",
         is_recurring=transaction_data.is_recurring,
         created_date=date.today(),
-        description=transaction_data.description
+        description=transaction_data.description,
+        sender_card_id=card.id,
+        receiver_card_id=None, 
+        transaction_type=TransactionType.USER_TO_ANOTHER_USER
     )
     
     db.add(transaction)
@@ -283,6 +294,58 @@ async def create_recurring_transaction(
     db.add(recurring_transaction)
     await db.flush()
     return recurring_transaction
+
+async def transfer_between_cards(db: AsyncSession, sending_card_number: str, receiving_card_number: str, amount: Decimal, description: str | None = None):
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    sending_card = await get_card_by_number(db, sending_card_number)
+    if not sending_card:
+        raise HTTPException(status_code=404, detail=f"Sending card {sending_card_number} not found")
+
+    receiving_card = await get_card_by_number(db, receiving_card_number)
+    if not receiving_card:
+        raise HTTPException(status_code=404, detail=f"Receiving card {receiving_card_number} not found")
+
+    
+    sending_card = await get_card_by_number(db, sending_card_number)
+    receiving_card = await get_card_by_number(db, receiving_card_number)
+
+    sender_balance = sending_card.balance
+    receiver_balance = receiving_card.balance
+
+    if sender_balance.amount < amount:
+        raise HTTPException(status_code=400, detail="Insufficient funds")
+    sender_balance.amount -= amount
+    receiver_balance.amount += amount
+
+    db.add(sender_balance)
+    db.add(receiver_balance)
+
+    default_category = await get_category_by_name(db, "User Transfer")
+    if not default_category:
+        raise HTTPException(status_code=500, detail="Default category for user transfers not found")
+    is_internal_transfer = sending_card.balance.user_id == receiving_card.balance.user_id
+
+    transaction = Transaction(
+        sender_id=sender_balance.user_id,
+        receiver_id=receiver_balance.user_id,
+        currency_id=sender_balance.currency_id,
+        category_id=default_category.id,
+        amount=amount,
+        status="completed",
+        is_recurring=False,
+        created_date=date.today(),
+        description=description,
+        sender_card_id=sending_card.id,
+        receiver_card_id=receiving_card.id,
+        transaction_type=TransactionType.USER_TO_USER,
+        is_internal_transfer= is_internal_transfer
+    )
+
+    db.add(transaction)
+    await db.commit()
+    return transaction
+
 
 
 # async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):

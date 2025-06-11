@@ -206,9 +206,10 @@ async def _get_user_by_id(
             User.id == user_id
         )
     )
-    if result is None:
+    user = result.scalar_one_or_none()
+    if user is None:
         raise UserNotFound()
-    return result
+    return user
 
 async def _get_user_id_by_username(
         db: AsyncSession,

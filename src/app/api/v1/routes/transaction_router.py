@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.utils.token_functions import get_current_user
 from app.persistence.db import get_session
 from app.persistence.users.users import User
-from app.schemas.transaction import TransactionCreate, TransactionResponse
+from app.schemas.transaction import CardToCardTransaction, CardToCardTransactionIn, CardToCardTransactionOut, TransactionCreate, TransactionResponse
 from app.services.transactions_service import *
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -69,3 +69,21 @@ async def get_all_recurring_transactions(db: AsyncSession = Depends(get_session)
     if not all_recurring_transactions["recurring_transactions"]:
         raise HTTPException(status_code=404, detail="No available recurring transacations")
     return all_recurring_transactions
+
+@router.post("/between_cards", response_model=CardToCardTransactionOut, status_code=status.HTTP_201_CREATED)
+async def transaction_between_cards(
+    transaction_data: CardToCardTransactionIn,
+    db: AsyncSession = Depends(get_session)
+):
+    transaction = await transfer_between_cards(
+        db,
+        sending_card_number=transaction_data.sender_card_number,
+        receiving_card_number=transaction_data.receiver_card_number,
+        amount=transaction_data.amount,
+        description=transaction_data.description
+    )
+    
+    transaction.sender_card_number = transaction_data.sender_card_number
+    transaction.receiver_card_number = transaction_data.receiver_card_number
+    
+    return transaction

@@ -15,6 +15,7 @@ PREDEFINED_CATEGORIES = [
     "utilities",
     "transport",
     "entertainment",
+    "User Transfer"
 ]
 async def create_predefined_categories(session):
     result = await session.execute(select(Category.name))

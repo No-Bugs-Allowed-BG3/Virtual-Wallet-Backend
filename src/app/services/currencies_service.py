@@ -42,3 +42,7 @@ async def _get_currency_code_by_currency_id(
     if not currency_code:
         raise CurrencyNotFound()
     return currency_code
+
+async def get_currency_id_by_code(db: AsyncSession, code: str) -> UUID | None:
+    result = await db.execute(select(Currency.id).where(Currency.code == code))
+    return result.scalar_one_or_none()

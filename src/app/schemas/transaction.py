@@ -39,12 +39,15 @@ class TransactionResponse(BaseModel):
     sender_id: UUID
     receiver_id: UUID
     currency_id: UUID
-    category_id: UUID
+    category_id: UUID | None = None
     amount: Decimal
     status: str
     is_recurring: bool
     created_date: date
     description: str | None = None
+    sender_card_number: str | None = None
+    receiver_card_number: str | None = None
+    is_internal_transfer: bool = False
 
     class Config:
         orm_mode = True
@@ -61,12 +64,36 @@ class RecurringTransactionCreate(BaseModel):
     occurrences: int | None = Field(None, gt=0, description="Optional number of occurrences, alternative to end_date")
     is_active: bool = True
 
-class TransactionFilter(BaseModel):
-    start_date: date | None = None
-    end_date: date | None = None
-    sender_username: str | None = None
-    receiver_username: str | None = None
-    direction: str | None = Field(None, description="incoming or outgoing")
-    user_id: UUID | None = None
-    limit: int = 20
-    offset: int = 0
+class CardToCardTransaction(BaseModel):
+    sender_card_number: str = Field(..., min_length=16, max_length=16)
+    receiver_card_number: str = Field(..., min_length=16, max_length=16)
+    amount: Decimal = Field(..., gt=0)
+    description: str | None = None
+
+    class Config:
+        allow_population_by_field_name = True
+
+class CardToCardTransactionIn(BaseModel):
+    sender_card_number: str
+    receiver_card_number: str
+    amount: Decimal
+    description: str | None = None
+
+class CardToCardTransactionOut(BaseModel):
+    id: UUID
+    sender_id: UUID
+    receiver_id: UUID
+    currency_id: UUID
+    category_id: UUID | None = None
+    amount: Decimal
+    status: str
+    is_recurring: bool
+    created_date: date
+    description: str | None = None
+    sender_card_number: str | None = None
+    receiver_card_number: str | None = None
+    is_internal_transfer: bool = False
+
+    class Config:
+        orm_mode = True
+
