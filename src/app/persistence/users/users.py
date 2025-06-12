@@ -26,6 +26,7 @@ class User(Base):
         is_admin (bool): Admin role flag.
         is_verified (bool): Email verification status.
         avatar (str): URL to the user's avatar image.
+        user_pin (str): A hash of the USER PIN Code used to authorize transactions
 
     Relationships:
         balances (List[Balance]): All balances owned by the user.
@@ -50,6 +51,7 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_activated : Mapped[bool] = mapped_column(Boolean, default=False,nullable=False)
     avatar: Mapped[str] = mapped_column(String, nullable=True)
+    user_pin:Mapped[str] = mapped_column(String,default="EMPTY",nullable=True)
 
     balances: Mapped[List["Balance"]] = relationship(
         "Balance", back_populates="user", cascade="all, delete-orphan"

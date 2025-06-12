@@ -33,6 +33,10 @@ class PasswordIncorrectFormat(CustomException):
     def __init__(self, detail: str = "Password must contain at least 8 characters, with at least one UPPERCASE character, one DIGIT and one SPECIAL character"):
         super().__init__(detail=detail, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+class PINIncorrectFormat(CustomException):
+    def __init__(self, detail: str = "User PIN is with incorrect format!"):
+        super().__init__(detail=detail, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
 class UsernameIncorrectFormat(CustomException):
     def __init__(self, detail: str = "Username must be between 2 and 20 characters!"):
         super().__init__(detail=detail, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)

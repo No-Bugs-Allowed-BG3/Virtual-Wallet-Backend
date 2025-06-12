@@ -1,10 +1,11 @@
 from app.api.exceptions import UserNotFound
 from app.persistence.users.users import User
+from uuid import UUID
 from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
-from sqlalchemy import update,select
+from sqlalchemy import update, select
 from app.services.utils.security import get_password_hash,verify_password
 from app.services.utils.processors import process_db_transaction
 from app.services.utils.mail.sendmail import send_activation_mail
@@ -14,6 +15,10 @@ from os import getenv
 import cloudinary
 import cloudinary.uploader
 from app.schemas.service_result import ServiceResult
+from app.schemas.confirmation import (ConfirmationResponse,
+                                      TargetEnum,
+                                      ConfirmationItem)
+from app.persistence.transactions.transaction import Transaction
 
 async def create_user(session:AsyncSession ,user: UserCreate) -> UserResponse|ServiceError:
     async def _create():
@@ -181,6 +186,33 @@ async def update_user_settings_password(current_user:UserResponse,
         result=service_result
     )
 
+async def update_user_settings_pin(current_user:UserResponse,
+                               session:AsyncSession,
+                                user_pin:str) -> ServiceResult|ServiceError:
+    async def _update_settings_password():
+        statement = select(User).where(User.id == current_user.id)
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return False
+        pin_hash = get_password_hash(user_pin)
+        statement = update(User).where(User.id == current_user.id).values(
+            user_pin = pin_hash
+            )
+        result = await session.execute(statement)
+        await session.commit()
+        if result.rowcount:
+            return True
+        return ServiceError.ERROR_USER_NOT_FOUND
+
+    service_result = await process_db_transaction(
+        session=session,
+        transaction_func=_update_settings_password,
+    )
+    return ServiceResult(
+        result=service_result
+    )
+
 async def get_user_settings(current_user:UserResponse,
                                session:AsyncSession) -> UserSettingsResponse|ServiceError:
     async def _get_settings():
@@ -195,6 +227,58 @@ async def get_user_settings(current_user:UserResponse,
         session=session,
         transaction_func=_get_settings,
     )
+
+async def confirm_user_financial_action(current_user:UserResponse,
+                                        confirmation_target:str,
+                                        confirmation_target_id:str,
+                                        user_pin:str,
+                                        session:AsyncSession)->ConfirmationResponse|ServiceError:
+    async def _confirm_user_action():
+        statement = select(User).where(User.id == current_user.id)
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return ServiceError.ERROR_USER_NOT_FOUND
+        if not verify_password(user_pin,user_object.user_pin):
+            return ServiceError.ERROR_USER_INVALID_PIN
+        if confirmation_target == TargetEnum.transaction.value:
+            statement = update(Transaction).where(Transaction.id == confirmation_target_id).values(is_approved=True)
+            result = await session.execute(statement)
+            await session.commit()
+            if not result.rowcount:
+                return ServiceError.ERROR_DURING_CONFIRMATION
+            else:
+                return ConfirmationResponse(
+                    confirmation_result=True,
+                    confirmation_target=TargetEnum(confirmation_target),
+                    confirmation_target_id=UUID(confirmation_target_id)
+                )
+    return await process_db_transaction(session=session,
+                                        transaction_func=_confirm_user_action)
+
+async def get_actions_for_confirmation(current_user:UserResponse,
+                                       session:AsyncSession)-> ConfirmationItem|ServiceError:
+    async def _get_confirmation_items():
+        statement = select(Transaction).where((Transaction.is_approved==False) &
+                                              (Transaction.sender_id == current_user.id)).\
+                                            order_by(Transaction.created_date).limit(1)
+        result = await session.execute(statement)
+        transaction_item = result.scalar_one_or_none()
+        if not transaction_item:
+            return ServiceError.ERROR_NO_PENDING_CONFIRMATIONS
+        statement = select(User).where(User.id == transaction_item.receiver_id)
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            return ServiceError.ERROR_NO_PENDING_CONFIRMATIONS
+        return ConfirmationItem(
+            confirmation_target=TargetEnum.transaction,
+            confirmation_target_id=transaction_item.id,
+            receiver=user_object.username
+            )
+
+    return await process_db_transaction(session=session,
+                                        transaction_func=_get_confirmation_items)
 
 async def _get_user_by_id(
         db: AsyncSession,

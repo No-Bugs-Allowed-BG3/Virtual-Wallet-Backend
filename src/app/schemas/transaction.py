@@ -18,8 +18,10 @@ class AdminTransactionResponse(BaseModel):
     is_recurring: bool
     created_date: date
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
+
 
 class TransactionCreate(BaseModel):
     receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")
@@ -44,8 +46,10 @@ class TransactionResponse(BaseModel):
     created_date: date
     description: str | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
+
 
 class RecurringTransactionCreate(BaseModel):
     receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")

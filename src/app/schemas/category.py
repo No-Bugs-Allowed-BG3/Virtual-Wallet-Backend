@@ -16,5 +16,7 @@ class CategoryRead(CategoryBase):
     is_deleted: bool
     is_default: bool
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
+

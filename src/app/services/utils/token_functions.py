@@ -10,7 +10,7 @@ from app.persistence.users.users import User
 from app.persistence.db import get_session
 from app.services.utils.processors import process_db_transaction
 from app.schemas.user import UserResponse
-from fastapi import Cookie,Depends
+from fastapi import Cookie,Depends,Form
 from typing import Annotated
 from app.api.exceptions import UserUnauthorized
 
@@ -31,6 +31,33 @@ async def create_access_token(user_id:uuid.UUID,is_admin:bool)->TokenResponse:
     """
     expiry:datetime = (datetime.now(timezone.utc) +
                        timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    data_to_encode = {
+        "sub":str(user_id),
+        "exp":expiry,
+        "admin":is_admin
+    }
+    encoded_access_token_data = jwt.encode( claims=data_to_encode,
+                                            key=settings.ACCESS_TOKEN_SECRET_KEY,
+                                            algorithm=settings.TOKEN_ALGORITHM )
+    return TokenResponse(access_token=encoded_access_token_data,
+                         token_type="access",
+                         expiry=expiry)
+
+async def create_device_token(user_id:uuid.UUID,is_admin:bool)->TokenResponse:
+    """
+    Args:
+        user_id: ID of the user for whom the Token is created
+        is_admin: Boolean value True or False indicating whether the user is
+                  a regular user or an admin
+
+    The expiry,algorithm and encryption key of the Token are
+    configured in the src.app.core.config.py file.
+
+    Returns: An object indicating the type of Token, in this case "access"
+             and the encoded payload of the token
+    """
+    expiry:datetime = (datetime.now(timezone.utc) +
+                       timedelta(days=settings.DEVICE_TOKEN_EXPIRY_DAYS))
     data_to_encode = {
         "sub":str(user_id),
         "exp":expiry,
@@ -155,6 +182,42 @@ async def get_current_user(session:Annotated[AsyncSession,Depends(get_session)],
         user_object = result.scalar_one_or_none()
         if not user_object:
             raise UserUnauthorized()
+        return UserResponse(
+            id = user_object.id,
+            username=user_object.username,
+            is_blocked=user_object.is_blocked,
+            is_verified=user_object.is_verified,
+            is_activated=user_object.is_activated,
+            is_admin=user_object.is_admin,
+            avatar=user_object.avatar
+        )
+
+    return await process_db_transaction(
+        session=session,
+        transaction_func=_get_current_user_from_db
+    )
+async def get_current_user_device(session:Annotated[AsyncSession,Depends(get_session)],device_token:Annotated[str|None,Form()]=None)->UserResponse|bool|dict:
+    """
+
+    Args:
+        session:
+        device_token:
+
+    Returns:
+
+
+    """
+    if not device_token:
+        raise USER_UNAUTHORIZED
+    token_data = await decode_access_token(device_token)
+    if not token_data:
+        raise USER_UNAUTHORIZED
+    async def _get_current_user_from_db():
+        statement = select(User).where(User.id==token_data.get("sub"))
+        result = await session.execute(statement)
+        user_object = result.scalar_one_or_none()
+        if not user_object:
+            raise USER_UNAUTHORIZED
         return UserResponse(
             id = user_object.id,
             username=user_object.username,

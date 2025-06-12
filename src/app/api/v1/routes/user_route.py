@@ -1,6 +1,6 @@
 from typing import Any,Annotated
 from fastapi import APIRouter,Depends,UploadFile,File
-from app.api.exceptions import UserUnauthorized,UserActivationError,UserVerificationError,UserAlreadyExists
+from api.exceptions import UserUnauthorized,UserAlreadyExists,UserNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
 from app.schemas.user import (UserResponse,
@@ -15,45 +15,45 @@ from app.services.users_service import (create_user,
                                         update_user_settings_avatar,
                                         update_user_settings_password,
                                         get_user_settings)
-from app.services.utils.token_functions import (get_current_user,
+from services.utils.token_functions import (get_current_user,
                                             user_can_interact,
                                             user_can_make_transactions)
 from app.schemas.service_result import ServiceResult
 
 router = APIRouter()
 
-@router.get("/current")
+@router.post("/current/")
 async def _get_current_user(current_user:Annotated[UserResponse,Depends(get_current_user)])->UserResponse|bool|dict:
     if not current_user:
         raise UserUnauthorized()
     return current_user
 
-@router.post("/current/interactions")
+@router.post("/current/interactions/")
 async def _get_interaction_rights(interaction_rights:Annotated[bool,Depends(user_can_interact)])->bool|dict:
     return interaction_rights
 
-@router.post("/current/transactions")
+@router.post("/current/transactions/")
 async def _get_interaction_rights(transaction_rights:Annotated[bool,Depends(user_can_make_transactions)])->bool|dict:
     return transaction_rights
 
-@router.post("")
-async def _register_user(user:UserCreate,session:AsyncSession=Depends(get_session)) -> Any:
+@router.post("/registrations/")
+async def _registers_user(user:UserCreate,session:AsyncSession=Depends(get_session)) -> Any:
     creation_result = await create_user(user=user,session=session)
     if not isinstance(creation_result,UserResponse):
         raise UserAlreadyExists()
     return creation_result
 
 
-@router.post("/activations")
+@router.get("/activations/")
 async def _activate_user(current_user:Annotated[UserResponse,Depends(get_current_user)],
                         session:AsyncSession=Depends(get_session))->ServiceResult:
     activation_result = await activate_user(session=session,
                                current_user=current_user)
     if not isinstance(activation_result,ServiceResult):
-        raise UserActivationError()
+        raise UserUnauthorized()
     return activation_result
 
-@router.post("/verifications")
+@router.post("/verifications/")
 async def _verify_user(current_user:Annotated[UserResponse,Depends(get_current_user)],
                        id_document:Annotated[UploadFile,File()],
                        selfie:Annotated[UploadFile,File()],
@@ -63,10 +63,10 @@ async def _verify_user(current_user:Annotated[UserResponse,Depends(get_current_u
                              selfie=await selfie.read(),
                              session=session)
     if not isinstance(verification_result,ServiceResult):
-        raise UserVerificationError()
+        raise UserUnauthorized()
     return verification_result
 
-@router.get("/current/settings")
+@router.get("/current/settings/")
 async def _get_user_settings(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 session: AsyncSession = Depends(get_session))->UserSettingsResponse:
     get_settings_result = await get_user_settings(current_user=current_user,
@@ -75,7 +75,7 @@ async def _get_user_settings(current_user:Annotated[UserResponse,Depends(get_cur
         raise UserUnauthorized()
     return get_settings_result
 
-@router.put("/current/settings/contacts")
+@router.post("/current/settings/contacts/")
 async def _update_user_settings_contacts(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 user_settings:UserSettings,
                                 session: AsyncSession = Depends(get_session))->ServiceResult:
@@ -87,7 +87,7 @@ async def _update_user_settings_contacts(current_user:Annotated[UserResponse,Dep
     return update_settings_contacts_result
 
 
-@router.put("/current/settings/password")
+@router.post("/current/settings/password/")
 async def _update_user_settings_password(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 password_collection:UserPasswordCollection,
                                 session: AsyncSession = Depends(get_session))->ServiceResult:
@@ -100,7 +100,7 @@ async def _update_user_settings_password(current_user:Annotated[UserResponse,Dep
         raise UserUnauthorized()
     return update_settings_password_result
 
-@router.post("/current/settings/avatar")
+@router.post("/current/settings/avatar/")
 async def _update_user_settings_avatar(current_user:Annotated[UserResponse,Depends(get_current_user)],
                                 avatar:Annotated[UploadFile|None,File()] = None,
                                 session: AsyncSession = Depends(get_session))->ServiceResult:

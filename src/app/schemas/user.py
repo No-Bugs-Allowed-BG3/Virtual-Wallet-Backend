@@ -37,10 +37,11 @@ class AdminUserResponse(BaseModel):
     is_admin:bool
     avatar:str|None=None
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
-    
+
 class UserSettings(BaseModel):
     email:EmailStr
     phone:Annotated[str,StringConstraints(max_length=13,min_length=10,pattern=r"^\+?(\d{10}|\d{12})$")]
@@ -123,3 +124,6 @@ class UserPasswordCollection(BaseModel):
             raise PasswordIncorrectFormat()
         return value
     old_password: str
+
+class UserPin(BaseModel):
+    number:Annotated[str,StringConstraints(min_length=4,max_length=6,pattern=r"\d{4,6}")]

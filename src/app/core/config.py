@@ -30,11 +30,12 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60
+    DEVICE_TOKEN_EXPIRY_DAYS:int = 3
 
     TOKEN_ALGORITHM:str = "HS256"
 
     PROJECT_NAME: str = "MONEY_HUB_BG3"
-    SQLALCHEMY_DATABASE_URI: str = "postgresql+asyncpg://postgres:#$%RolaPss@localhost/virtual_wallet"
+    SQLALCHEMY_DATABASE_URI: str = "postgresql+asyncpg://ivan:peugeotxu10j4rs@localhost/bg3wallet"
     PASSWORD_HASH_SALT:str = "MONEY_HUB"
 
 
