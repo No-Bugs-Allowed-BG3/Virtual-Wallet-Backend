@@ -97,8 +97,7 @@ async def block_user(
         db: AsyncSession,
         user_id: UUID
 ) -> UserBlocked:
-    result = await _get_user_by_id(db, user_id)
-    user_obj = result.scalar_one()
+    user_obj = await _get_user_by_id(db, user_id)
     user_obj.is_blocked = True
     await db.commit()
     return UserBlocked()
@@ -107,8 +106,7 @@ async def unblock_user(
         db: AsyncSession,
         user_id: UUID
 ) -> UserUnblocked:
-    result = await _get_user_by_id(db, user_id)
-    user_obj = result.scalar_one()
+    user_obj = await _get_user_by_id(db, user_id)
     user_obj.is_blocked = False
     await db.commit()
     return UserUnblocked()
