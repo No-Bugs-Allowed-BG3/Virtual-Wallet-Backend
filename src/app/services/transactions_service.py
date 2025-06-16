@@ -28,6 +28,10 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     sender = await _get_user_by_id(db, sender_id)
     if not sender.is_activated:
         raise HTTPException(403, "Sender account is not activated")
+    
+    if not sender.is_verified:
+         raise HTTPException(403, "Sender account is not verified")
+
 
     card = await get_card_by_number(db, transaction_data.card_number)
     if card is None:
