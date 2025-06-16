@@ -101,7 +101,7 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
             sender_id=sender_id,
             receiver_id=receiver.id,
             amount=transaction_data.amount,
-            currency_id=currency_id,
+            currency_id=transaction_data.currency_id,
             interval_type=interval_type,
             next_run_date=transaction_data.next_run_date,
             description=transaction_data.description,
@@ -110,7 +110,7 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     transaction = Transaction(
         sender_id=sender_id,
         receiver_id=receiver.id,
-        currency_id=currency_id,
+        currency_id=transaction_data.currency_id,
         category_id=category_id,
         amount=transaction_data.amount,
         status="pending",
