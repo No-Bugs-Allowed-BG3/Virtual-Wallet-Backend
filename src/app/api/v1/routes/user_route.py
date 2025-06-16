@@ -7,14 +7,16 @@ from app.schemas.user import (UserResponse,
                               UserCreate,
                               UserSettings,
                               UserPasswordCollection,
-                              UserSettingsResponse)
+                              UserSettingsResponse,
+                              UserContactResponse)
 from app.services.users_service import (create_user,
                                         activate_user,
                                         verify_user,
                                         update_user_settings_contacts,
                                         update_user_settings_avatar,
                                         update_user_settings_password,
-                                        get_user_settings)
+                                        get_user_settings,
+                                        _get_user_info_by_username)
 from services.utils.token_functions import (get_current_user,
                                             user_can_interact,
                                             user_can_make_transactions)
@@ -29,7 +31,7 @@ async def _get_current_user(current_user:Annotated[UserResponse,Depends(get_curr
     return current_user
 
 @router.post("/current/interactions/")
-async def _get_interaction_rights(interaction_rights:Annotated[bool,Depends(user_can_interact)])->bool|dict:
+async def _get_interaction_rights(interaction_rights:Annotated[ServiceResult,Depends(user_can_interact)])->ServiceResult:
     return interaction_rights
 
 @router.post("/current/transactions/")
@@ -110,3 +112,13 @@ async def _update_user_settings_avatar(current_user:Annotated[UserResponse,Depen
     if not isinstance(update_settings_result,ServiceResult):
         raise UserUnauthorized()
     return update_settings_result
+
+@router.get("/others/{username}/")
+async def get_user_info_by_username(current_user:Annotated[UserResponse,Depends(get_current_user)],
+                                    username:str,
+                                    session: AsyncSession = Depends(get_session)):
+    user_info:UserContactResponse = await _get_user_info_by_username(db=session,
+                                                                     username=username)
+    if not isinstance(user_info,UserContactResponse):
+        raise UserUnauthorized()
+    return user_info

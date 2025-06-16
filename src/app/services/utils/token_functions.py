@@ -13,6 +13,7 @@ from app.schemas.user import UserResponse
 from fastapi import Cookie,Depends,Form
 from typing import Annotated
 from app.api.exceptions import UserUnauthorized
+from app.schemas.service_result import ServiceResult
 
 import uuid
 
@@ -208,16 +209,16 @@ async def get_current_user_device(session:Annotated[AsyncSession,Depends(get_ses
 
     """
     if not device_token:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     token_data = await decode_access_token(device_token)
     if not token_data:
-        raise USER_UNAUTHORIZED
+        raise UserUnauthorized()
     async def _get_current_user_from_db():
         statement = select(User).where(User.id==token_data.get("sub"))
         result = await session.execute(statement)
         user_object = result.scalar_one_or_none()
         if not user_object:
-            raise USER_UNAUTHORIZED
+            raise UserUnauthorized()
         return UserResponse(
             id = user_object.id,
             username=user_object.username,
@@ -233,7 +234,7 @@ async def get_current_user_device(session:Annotated[AsyncSession,Depends(get_ses
         session=session,
     )
 
-async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->bool:
+async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)],access_token:Annotated[str|None,Cookie()]=None)->ServiceResult:
     """
     Args:
         session:
@@ -259,8 +260,8 @@ async def user_can_interact(session:Annotated[AsyncSession,Depends(get_session)]
         if not user_object:
             raise UserUnauthorized()
         if user_object.is_activated and user_object.is_verified:
-            return True
-        return False
+            return ServiceResult(result=True)
+        return ServiceResult(result=False)
 
     return await process_db_transaction(
         session=session,

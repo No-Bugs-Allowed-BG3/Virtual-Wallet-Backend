@@ -1,7 +1,7 @@
 from app.api.exceptions import UserNotFound
 from app.persistence.users.users import User
 from uuid import UUID
-from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse
+from app.schemas.user import UserCreate, UserResponse,UserSettings,UserSettingsResponse,UserContactResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from uuid import UUID
@@ -308,6 +308,24 @@ async def _get_user_id_by_username(
     if user_id is None:
         raise UserNotFound()
     return user_id
+
+async def _get_user_info_by_username(
+        db: AsyncSession,
+        username: str
+) -> UserContactResponse:
+    result = await db.execute(
+        select(User)
+        .where(
+            User.username == username
+            )
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise UserNotFound()
+    return UserContactResponse(email=user.email,
+                               phone=user.phone,
+                               username = user.username,
+                               id=user.id)
 
 async def _get_user_id_by_phone(
         db: AsyncSession,

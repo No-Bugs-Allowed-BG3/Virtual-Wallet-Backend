@@ -1,3 +1,5 @@
+from psycopg2.extras import UUID_adapter
+
 from app.api.exceptions import PasswordIncorrectFormat, UsernameIncorrectFormat
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel,EmailStr,field_validator
@@ -95,6 +97,13 @@ class UserCreate(UserSettings):
         ):
             raise PasswordIncorrectFormat()
         return value
+
+class UserContactResponse(BaseModel):
+    email:str
+    phone:str
+    username:str
+    id:uuid.UUID
+
 
 class UserLogin(BaseModel):
     username:str
