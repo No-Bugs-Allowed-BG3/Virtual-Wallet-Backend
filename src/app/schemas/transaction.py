@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.core.enums.enums import IntervalType
+from app.core.enums.enums import AvailableCategory, AvailableCurrency, IntervalType
 
 
 class AdminTransactionResponse(BaseModel):
@@ -23,8 +23,14 @@ class AdminTransactionResponse(BaseModel):
 
 class TransactionCreate(BaseModel):
     receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")
-    category_id: UUID | None = None
-    currency_id: UUID
+    predefined_category: AvailableCategory | None = Field(
+        ...,
+        description="Name of the category in which this transaction falls under."
+    )
+    currency_code: AvailableCurrency = Field(
+        ...,
+        description="Code of the currency in which this transaction is executed."
+    )
     card_number: str = Field(...,min_length=16, max_length=16)
     category_name: str | None = Field(None, min_length=2, max_length=50, description="Name of a new category (if not choosing from existing)")
     amount: Decimal = Field(..., gt=0, description="Amount to transfer")

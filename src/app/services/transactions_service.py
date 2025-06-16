@@ -10,9 +10,10 @@ from app.persistence.balances.balance import Balance
 from app.persistence.users.users import User
 from app.schemas.transaction import TransactionCreate
 from app.services.cards_service import get_card_by_number
+from app.services.currencies_service import get_currency_id_by_code
 from app.services.users_service import *
 from app.schemas.category import CategoryCreate
-from app.services.categories_service import create_category, get_category_by_name
+from app.services.categories_service import _get_category_id_by_name, create_category, get_category_by_name
 from app.core.enums.enums import IntervalType, TransactionType
 from app.services.categories_service import create_category
 
@@ -46,10 +47,13 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     if receiver.id == sender_id:
         raise HTTPException(status_code=400, detail="Cannot send money to yourself")
     
-    await get_or_create_receiver_balance(db, receiver.id, transaction_data.currency_id)
+    currency_id = await get_currency_id_by_code(db=db, code=transaction_data.currency_code)
+
+    await get_or_create_receiver_balance(db, receiver.id, currency_id)
     
-    if transaction_data.category_id:
-        result = await db.execute(select(Category).where(Category.id == transaction_data.category_id))
+    if transaction_data.predefined_category:
+        category_id = await _get_category_id_by_name(transaction_data.predefined_category)
+        result = await db.execute(select(Category).where(Category.id == category_id))
         category = result.scalar_one_or_none()
 
         if not category:
@@ -62,8 +66,9 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
         if not category:
             category_create = CategoryCreate(name=transaction_data.category_name, user_id=sender_id)
             category = await create_category(db, sender_id, category_create)
+            category_id = category.id
     else:
-        raise HTTPException(status_code=400, detail="Category must be specified by id or name")
+        raise HTTPException(status_code=400, detail="Category must be specified from the predefined list or created by name")
 
     if transaction_data.is_recurring:
         if not transaction_data.interval_days or not transaction_data.next_run_date:
@@ -74,7 +79,7 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
             sender_id=sender_id,
             receiver_id=receiver.id,
             amount=transaction_data.amount,
-            currency_id=transaction_data.currency_id,
+            currency_id=currency_id,
             interval_type=interval_type,
             next_run_date=transaction_data.next_run_date,
             description=transaction_data.description,
@@ -83,8 +88,8 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
     transaction = Transaction(
         sender_id=sender_id,
         receiver_id=receiver.id,
-        currency_id=transaction_data.currency_id,
-        category_id=category.id,
+        currency_id=currency_id,
+        category_id=category_id,
         amount=transaction_data.amount,
         status="pending",
         is_recurring=transaction_data.is_recurring,

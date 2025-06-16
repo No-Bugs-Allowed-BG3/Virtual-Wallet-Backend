@@ -28,6 +28,10 @@ async def get_category_by_name(session: AsyncSession, category_name:str) -> Cate
     result = await session.execute(select(Category).where(Category.name == category_name, Category.is_deleted.is_(False)))
     return result.scalar_one_or_none()
 
+async def _get_category_id_by_name(session: AsyncSession, category_name:str) -> Category | None:
+    result = await session.execute(select(Category).where(Category.name == category_name, Category.is_deleted.is_(False)))
+    return result.id
+
 async def create_category(session: AsyncSession, user_id: uuid.UUID,category_data: CategoryCreate) -> Category:
     new_category = Category(id=uuid.uuid4(), name=category_data.name, user_id = category_data.user_id)
     session.add(new_category)

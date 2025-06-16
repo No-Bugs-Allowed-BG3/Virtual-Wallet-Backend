@@ -30,6 +30,13 @@ class AvailableCurrency(str, Enum):
     INR = "INR"
     USD = "USD"
 
+class AvailableCategory(str, Enum):
+    UTILITIES = "utilities"
+    ENTERTAINMENT = "entertainment"
+    GROCERIES = "groceries"
+    USER_TRANSFER = "User Transfer"
+    TRANSPORT = "transport"
+
 class TransactionType(str, Enum):
     USER_TO_USER = "user_to_user"
     USER_TO_ANOTHER_USER = "user_to_another_user"
