@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.core.enums.enums import AvailableCategory, AvailableCurrency, IntervalType
 
@@ -22,23 +22,25 @@ class AdminTransactionResponse(BaseModel):
         orm_mode = True
 
 class TransactionCreate(BaseModel):
-    receiver_username: str = Field(..., min_length=3, max_length=50, description="Username of the recipient")
-    predefined_category: AvailableCategory | None = Field(
-        ...,
-        description="Name of the category in which this transaction falls under."
-    )
-    currency_code: AvailableCurrency = Field(
-        ...,
-        description="Code of the currency in which this transaction is executed."
-    )
+    receiver_username: str | None = Field(None, min_length=3, max_length=50, description="Username of the recipient")
+    category_id: UUID | None = None
+    currency_id: UUID
     card_number: str = Field(...,min_length=16, max_length=16)
     category_name: str | None = Field(None, min_length=2, max_length=50, description="Name of a new category (if not choosing from existing)")
+    use_contact_id: UUID | None = None
     amount: Decimal = Field(..., gt=0, description="Amount to transfer")
     description: str = Field(..., min_length=1, max_length=200, description="Reason or note for the transaction")
     is_recurring: bool = False
     interval_days: int | None = Field(None, gt=0, description="Interval in days for recurring transactions")
     next_run_date: date | None = Field(None, description="Date for next recurring transaction execution")
     
+    @model_validator(mode="after")
+    def validate_receiver_or_contact(self):
+        if not self.receiver_username and not self.use_contact_id:
+            raise ValueError("Either 'receiver_username' or 'use_contact_id' must be provided.")
+        if self.receiver_username and self.use_contact_id:
+            raise ValueError("Provide only one: either 'receiver_username' or 'use_contact_id', not both.")
+        return self
 
 class TransactionResponse(BaseModel):
     id: UUID

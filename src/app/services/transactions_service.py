@@ -4,6 +4,7 @@ from sqlalchemy.exc import NoResultFound
 from fastapi import HTTPException
 from sqlalchemy import asc, desc, select, func
 from app.persistence.categories.categories import Category
+from app.persistence.contacts.contact import Contact
 from app.persistence.transactions.transaction import Transaction
 from app.persistence.recurring_transactions.recurring_transaction import RecurringTransaction
 from app.persistence.balances.balance import Balance
@@ -25,42 +26,62 @@ from app.services.users_service import _get_user_by_id
 
 
 async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):
-    
     sender = await _get_user_by_id(db, sender_id)
-                                     
     if not sender.is_activated:
         raise HTTPException(403, "Sender account is not activated")
     
-    # if not sender.is_verified:
-    #     raise HTTPException(403, "Sender account is not verified")
+    if not sender.is_verified:
+         raise HTTPException(403, "Sender account is not verified")
+
 
     card = await get_card_by_number(db, transaction_data.card_number)
+    if card is None:
+        raise HTTPException(status_code=404, detail="No card found with this card number")
     if not card.balance:
-        raise HTTPException(status_code=400, detail="Card has no balance")
+        raise HTTPException(400, "Card has no balance")
     if card.balance.user_id != sender_id:
-        raise HTTPException(status_code=403, detail="Card does not belong to sender")
-    
+        raise HTTPException(403, "Card does not belong to sender")
+
     sender_balance = card.balance
     await ensure_sufficient_funds(sender_balance, transaction_data.amount)
-    
-    receiver = await get_receiver_by_username(db, transaction_data.receiver_username)
-    if receiver.id == sender_id:
-        raise HTTPException(status_code=400, detail="Cannot send money to yourself")
-    
-    currency_id = await get_currency_id_by_code(db=db, code=transaction_data.currency_code)
 
-    await get_or_create_receiver_balance(db, receiver.id, currency_id)
-    
-    if transaction_data.predefined_category:
-        category_id = await _get_category_id_by_name(transaction_data.predefined_category)
-        result = await db.execute(select(Category).where(Category.id == category_id))
+    if transaction_data.use_contact_id and transaction_data.receiver_username:
+        raise HTTPException(400, detail="Specify either contact ID or receiver username, not both.")
+
+    if transaction_data.use_contact_id:
+        contact_result = await db.execute(
+            select(Contact).where(
+                Contact.user_id == sender_id,
+                Contact.contact_id == transaction_data.use_contact_id
+            )
+        )
+        contact = contact_result.scalar_one_or_none()
+        if not contact:
+            raise HTTPException(403, "Selected contact is not in your contact list")
+
+        receiver = await _get_user_by_id(db, transaction_data.use_contact_id)
+
+    elif transaction_data.receiver_username:
+        receiver = await get_receiver_by_username(db, transaction_data.receiver_username)
+        if receiver.id == sender_id:
+            raise HTTPException(400, "Cannot send money to yourself")
+
+    else:
+        raise HTTPException(400, "You must specify either a contact ID or receiver username")
+
+    await get_or_create_receiver_balance(db, receiver.id, transaction_data.currency_id)
+
+    if transaction_data.category_id:
+        result = await db.execute(select(Category).where(Category.id == transaction_data.category_id))
         category = result.scalar_one_or_none()
-
         if not category:
-            raise HTTPException(status_code=404, detail="Category not found")
-        
+            raise HTTPException(404, "Category not found")
+
     elif transaction_data.category_name:
-        result = await db.execute(select(Category).where(Category.name == transaction_data.category_name, Category.user_id == sender_id))
+        result = await db.execute(select(Category).where(
+            Category.name == transaction_data.category_name,
+            Category.user_id == sender_id
+        ))
         category = result.scalar_one_or_none()
 
         if not category:
@@ -68,11 +89,12 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
             category = await create_category(db, sender_id, category_create)
             category_id = category.id
     else:
-        raise HTTPException(status_code=400, detail="Category must be specified from the predefined list or created by name")
+        raise HTTPException(400, "Category must be specified by id or name")
 
     if transaction_data.is_recurring:
         if not transaction_data.interval_days or not transaction_data.next_run_date:
-            raise HTTPException(status_code=400, detail="Recurring transactions must have interval type and next execution date")
+            raise HTTPException(400, "Recurring transactions must have interval type and next execution date")
+
         interval_type = IntervalType.get_interval_type_from_days(transaction_data.interval_days)
         await create_recurring_transaction(
             db=db,
@@ -96,14 +118,14 @@ async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, tra
         created_date=date.today(),
         description=transaction_data.description,
         sender_card_id=card.id,
-        receiver_card_id=None, 
+        receiver_card_id=None,
         transaction_type=TransactionType.USER_TO_ANOTHER_USER
     )
-    
+
     db.add(transaction)
     await db.commit()
     await db.refresh(transaction)
-    
+
     return transaction
 
 
@@ -350,85 +372,3 @@ async def transfer_between_cards(db: AsyncSession, sending_card_number: str, rec
     db.add(transaction)
     await db.commit()
     return transaction
-
-
-
-# async def create_user_to_user_transaction(db: AsyncSession, sender_id: UUID, transaction_data: TransactionCreate):
-#     receiver = await db.scalar(select(User).where(User.username == transaction_data.receiver_username))
-#     if receiver is None:
-#         raise HTTPException(status_code=404, detail="Recipient not found")
-    
-#     if receiver.id == sender_id:
-#         raise HTTPException(status_code=400, detail="Cannot send money to yourself")
-
-#     stmt_sender = select(Balance).where(
-#         Balance.user_id == sender_id,
-#         Balance.currency_id == transaction_data.currency_id
-#     )
-#     result = await db.execute(stmt_sender)
-#     sender_balance = result.scalar_one_or_none()
-
-#     if not sender_balance:
-#         raise HTTPException(status_code=400, detail="Sender does not have a balance in this currency")
-    
-#     if sender_balance.amount < transaction_data.amount:
-#         raise HTTPException(status_code=400, detail="Not enough funds")
-    
-#     stmt_receiver = select(Balance).where(
-#         Balance.user_id == receiver.id,
-#         Balance.currency_id == transaction_data.currency_id
-#     )
-    
-#     result = await db.execute(stmt_receiver)
-#     receiver_balance = result.scalar_one_or_none()
-
-#     if not receiver_balance:
-#         receiver_balance = Balance(
-#             user_id=receiver.id,
-#             currency_id=transaction_data.currency_id,
-#             amount=Decimal("0.0")
-#         )
-#         db.add(receiver_balance)
-#         await db.flush()
-        
-#     if transaction_data.is_recurring:
-#         interval_type = IntervalType.get_interval_type_from_days(transaction_data.interval_days)
-#         recurring = RecurringTransaction(
-#             sender_id=sender_id,
-#             receiver_id=receiver.id,
-#             amount=transaction_data.amount,
-#             currency_id=transaction_data.currency_id,
-#             interval_type=interval_type,
-#             next_execution_date=transaction_data.next_run_date or date.today(),
-#             description=transaction_data.description,
-#             is_active=True,
-#             last_run_date=None
-#         )
-#         db.add(recurring)
-
-#     if transaction_data.category_id is None and transaction_data.category_name:
-#         category = await db.scalar(select(Category).where(Category.name == transaction_data.category_name))
-#         if not category:
-#             category = await create_category(db,sender_id,CategoryCreate(name=transaction_data.category_name,user_id=sender_id ))
-#         transaction_data.category_id = category.id
-#     elif transaction_data.category_id is None:
-#         raise HTTPException(status_code=400, detail="Category must be specified (ID or name)")
-
-#     transaction = Transaction(
-#         sender_id=sender_id,
-#         receiver_id=receiver.id,
-#         currency_id=transaction_data.currency_id,
-#         category_id=transaction_data.category_id,
-#         amount=transaction_data.amount,
-#         status="pending",
-#         is_recurring=transaction_data.is_recurring,
-#         created_date=date.today(),
-#         description=transaction_data.description
-#     )
-    
-#     db.add(transaction)
-    
-#     await db.commit()
-#     await db.refresh(transaction)
-
-#     return transaction
