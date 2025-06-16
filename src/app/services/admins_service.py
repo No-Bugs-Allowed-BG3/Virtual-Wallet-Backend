@@ -86,7 +86,7 @@ async def read_transactions(
 
     result = await db.execute(stmt)
     rows = result.all()
-    transactions = [AdminTransactionResponse(**dict(row)) for row in rows]
+    transactions = [AdminTransactionResponse(**row._mapping) for row in rows]
 
     if not transactions:
         raise TransactionNotFound()
