@@ -4,10 +4,10 @@ import uuid
 from sqlalchemy import select
 from app.core.config import settings
 from app.persistence.db import initialize_database, get_session
-from app.persistence.db import Base  # your DeclarativeBase
-from app.persistence.db import engine  # your AsyncEngine
+from app.persistence.db import Base 
+from app.persistence.db import engine  
 from app.persistence.currencies.currency import Currency 
-from app.persistence.categories.categories import Category # adjust import paths
+from app.persistence.categories.categories import Category 
 from app.core.enums.enums import AvailableCurrency
 
 PREDEFINED_CATEGORIES = [
@@ -34,20 +34,17 @@ async def create_predefined_categories(session):
         print("All categories already present; no inserts performed.")
 
 async def load_initial_currencies():
-    # 1. Create all tables (if they don't exist)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # 2. Open a session and insert missing currencies
     async for session in get_session():
-        # Fetch existing codes
         result = await session.execute(select(Currency.code))
         existing_codes = {row[0] for row in result.all()}
 
         to_add = []
         for cur in AvailableCurrency:
             code = cur.value.upper()
-            name = cur.name.title()  # e.g. "Usd" -> "Usd", adjust if you need full names
+            name = cur.name.title() 
             if code not in existing_codes:
                 to_add.append(
                     Currency(
