@@ -13,6 +13,6 @@
         "./tests"
     ],
     "python.testing.pytestArgs": [
-        "."
+        "src"
     ]
 }
