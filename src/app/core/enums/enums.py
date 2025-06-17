@@ -24,8 +24,12 @@ class IntervalType(Enum):
 
 
 class AvailableCurrency(str, Enum):
-    USD = "usd"
-    GBP = "gbp"
-    EUR = "eur"
-    INR = "inr"
-    BGN = "bgn"
+    EUR = "EUR"
+    BGN = "BGN"
+    GBP = "GBP"
+    INR = "INR"
+    USD = "USD"
+
+class TransactionType(str, Enum):
+    USER_TO_USER = "user_to_user"
+    USER_TO_ANOTHER_USER = "user_to_another_user"

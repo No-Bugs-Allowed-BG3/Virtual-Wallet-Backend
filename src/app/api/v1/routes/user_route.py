@@ -1,8 +1,10 @@
 from typing import Any,Annotated
-from fastapi import APIRouter,Depends,UploadFile,File
+from fastapi import APIRouter,Depends,UploadFile,File,Form
+from app.schemas.confirmation import ConfirmationResponse,ConfirmationItem
 from api.exceptions import UserUnauthorized,UserAlreadyExists,UserNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.persistence.db import get_session
+from app.services.errors import ServiceError
 from app.schemas.user import (UserResponse,
                               UserCreate,
                               UserSettings,
@@ -16,8 +18,13 @@ from app.services.users_service import (create_user,
                                         update_user_settings_avatar,
                                         update_user_settings_password,
                                         get_user_settings,
-                                        _get_user_info_by_username)
+                                        _get_user_info_by_username,
+                                        get_actions_for_confirmation,
+                                        confirm_user_financial_action,
+                                        update_user_settings_pin,
+                                        get_transaction_status)
 from services.utils.token_functions import (get_current_user,
+                                            get_current_user_device,
                                             user_can_interact,
                                             user_can_make_transactions)
 from app.schemas.service_result import ServiceResult
@@ -88,6 +95,17 @@ async def _update_user_settings_contacts(current_user:Annotated[UserResponse,Dep
         raise UserUnauthorized()
     return update_settings_contacts_result
 
+@router.post("/current/settings/pin/")
+async def _update_user_settings_contacts(current_user:Annotated[UserResponse,Depends(get_current_user)],
+                                user_pin:Annotated[str,Form()],
+                                session: AsyncSession = Depends(get_session))->ServiceResult:
+    update_settings_pin = await update_user_settings_pin(current_user=current_user,
+                                                        session=session,
+                                                        user_pin=user_pin)
+    if not isinstance(update_settings_pin,ServiceResult):
+        raise UserUnauthorized()
+    return update_settings_pin
+
 
 @router.post("/current/settings/password/")
 async def _update_user_settings_password(current_user:Annotated[UserResponse,Depends(get_current_user)],
@@ -122,3 +140,49 @@ async def get_user_info_by_username(current_user:Annotated[UserResponse,Depends(
     if not isinstance(user_info,UserContactResponse):
         raise UserUnauthorized()
     return user_info
+
+@router.post("/confirmations/")
+async def _user_confirm_action(confirmation_target:Annotated[str,Form()],
+                               confirmation_target_id:Annotated[str,Form()],
+                               user_pin:Annotated[str,Form()],
+                               current_user:Annotated[UserResponse,Depends(get_current_user_device)],
+                               session:AsyncSession = Depends(get_session))->ConfirmationResponse:
+    confirm_user_financial_action_result = await confirm_user_financial_action(current_user=current_user,
+                                                session=session,
+                                                confirmation_target=confirmation_target,
+                                                confirmation_target_id=confirmation_target_id,
+                                                user_pin=user_pin)
+    print(confirm_user_financial_action_result)
+    if not isinstance(confirm_user_financial_action_result,ConfirmationResponse):
+        raise UserUnauthorized
+    return confirm_user_financial_action_result
+
+@router.post("/confirmations/all/")
+async def _user_confirm_action(current_user:Annotated[UserResponse,Depends(get_current_user_device)],
+                               session:AsyncSession = Depends(get_session))->ConfirmationItem|ServiceResult:
+    actions_for_confirmation = await get_actions_for_confirmation(current_user=current_user,
+                                                session=session)
+    if isinstance(actions_for_confirmation,ConfirmationItem):
+        return actions_for_confirmation
+    if isinstance(actions_for_confirmation,ServiceError):
+        return ServiceResult(result=False)
+    raise UserUnauthorized
+
+@router.post("/confirmations/check/{transaction_id}/")
+async def _user_check_transaction(transaction_id:str,
+                                  current_user:Annotated[UserResponse,Depends(get_current_user)],
+                               session:AsyncSession = Depends(get_session))->ServiceError|ServiceResult:
+    transaction_status = await get_transaction_status(current_user=current_user,
+                                                session=session,
+                                                transaction_id=transaction_id)
+    if isinstance(transaction_status,ServiceError):
+        return ServiceResult(result=False)
+    return transaction_status
+
+@router.post("/current/device/")
+async def _user_confirm_action(current_user:Annotated[UserResponse,Depends(get_current_user_device)])\
+        ->ServiceResult:
+    if not current_user:
+        return ServiceResult(result=False)
+    else:
+        return ServiceResult(result=True)

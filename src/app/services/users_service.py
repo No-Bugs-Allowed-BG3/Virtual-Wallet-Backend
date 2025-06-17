@@ -242,7 +242,7 @@ async def confirm_user_financial_action(current_user:UserResponse,
         if not verify_password(user_pin,user_object.user_pin):
             return ServiceError.ERROR_USER_INVALID_PIN
         if confirmation_target == TargetEnum.transaction.value:
-            statement = update(Transaction).where(Transaction.id == confirmation_target_id).values(is_approved=True)
+            statement = update(Transaction).where(Transaction.id == confirmation_target_id).values(status="approved")
             result = await session.execute(statement)
             await session.commit()
             if not result.rowcount:
@@ -256,10 +256,28 @@ async def confirm_user_financial_action(current_user:UserResponse,
     return await process_db_transaction(session=session,
                                         transaction_func=_confirm_user_action)
 
+async def get_transaction_status(current_user:UserResponse,
+                                 session:AsyncSession,
+                                 transaction_id:str)->ServiceError|ServiceResult:
+    async def _get_transaction():
+        statement = select(Transaction).where((Transaction.id==transaction_id))
+
+        result = await session.execute(statement)
+        transaction_item = result.scalar_one_or_none()
+        if not transaction_item:
+            return ServiceError.ERROR_DURING_CONFIRMATION
+        if transaction_item.status == "approved":
+            return ServiceResult(result=True)
+        else:
+            return ServiceResult(result=False)
+
+    return await process_db_transaction(session=session,
+                                  transaction_func=_get_transaction)
+
 async def get_actions_for_confirmation(current_user:UserResponse,
                                        session:AsyncSession)-> ConfirmationItem|ServiceError:
     async def _get_confirmation_items():
-        statement = select(Transaction).where((Transaction.is_approved==False) &
+        statement = select(Transaction).where((Transaction.status=="pending") &
                                               (Transaction.sender_id == current_user.id)).\
                                             order_by(Transaction.created_date).limit(1)
         result = await session.execute(statement)
@@ -292,7 +310,7 @@ async def _get_user_by_id(
     )
     if result is None:
         raise UserNotFound()
-    return result
+    return result.scalar_one_or_none()
 
 async def _get_user_id_by_username(
         db: AsyncSession,

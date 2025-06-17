@@ -1,5 +1,7 @@
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Numeric, Boolean, Date, String
+from app.core.enums.enums import TransactionType
 from app.persistence.users.users import User
 from app.persistence.currencies.currency import Currency
 from app.persistence.db import Base
@@ -15,7 +17,7 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    
+
     sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     currency_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("currencies.id"))
     receiver_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
@@ -26,9 +28,12 @@ class Transaction(Base):
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     created_date: Mapped[Date] = mapped_column(Date)
     description: Mapped[str] = mapped_column(String, nullable=True)
+    sender_card_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cards.id"), nullable=True)
+    receiver_card_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cards.id"), nullable=True)
+    is_internal_transfer: Mapped[bool] = mapped_column(Boolean, default=False)
+    transaction_type: Mapped[TransactionType] = mapped_column(SQLEnum(TransactionType), default=TransactionType.USER_TO_USER)
 
     sender: Mapped["User"] = relationship("User", foreign_keys=[sender_id], backref="sent_transactions")
     receiver: Mapped["User"] = relationship("User", foreign_keys=[receiver_id], backref="received_transactions")
     currency: Mapped["Currency"] = relationship("Currency", backref="transactions")
     category: Mapped["Category"] = relationship("Category", back_populates="transactions")
-

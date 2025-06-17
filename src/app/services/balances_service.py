@@ -8,7 +8,9 @@ from app.schemas.balance import BalanceResponse, BalanceCreate
 from app.api.exceptions import BalanceAlreadyExists, BalanceNotFound
 from app.schemas.balance import BalanceResponse
 from app.persistence.balances.balance import Balance
+from app.schemas.user import UserResponse
 from .currencies_service import _get_currency_id_by_currency_code
+from sqlalchemy.orm import selectinload
 
 async def _create_balance(
     db: AsyncSession,
@@ -36,6 +38,28 @@ async def _create_balance(
         currency_code=balance.currency.code,
     )
 
+async def get_balances_by_user_id(
+    session: AsyncSession,
+    current_user: UserResponse
+) -> List[BalanceResponse]:
+    result = await session.execute(
+        select(Balance)
+        .options(selectinload(Balance.currency))
+        .where(Balance.user_id == current_user.id)
+    )
+    balances = result.scalars().all()
+    if not balances:
+        raise BalanceNotFound()
+    balance_responses = []
+    for balance in balances:
+        balance_responses.append(BalanceResponse(
+            id=balance.id,
+            amount=balance.amount,
+            currency_code=balance.currency.code,
+            currency_id=str(balance.currency_id)
+        ))
+    return balance_responses
+
 async def _get_balance_ids_by_user_id(
     db: AsyncSession,
     user_id: UUID
@@ -47,7 +71,7 @@ async def _get_balance_ids_by_user_id(
     balance_ids = result.scalars().all()
     if not balance_ids:
         raise BalanceNotFound()
-    return balance_ids
+    return list(balance_ids)
 
 async def _get_balance_id_by_user_id_and_currency_code(
         db: AsyncSession,

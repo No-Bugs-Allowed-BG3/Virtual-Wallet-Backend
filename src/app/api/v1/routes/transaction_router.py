@@ -9,7 +9,7 @@ from app.services.transactions_service import *
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
-@router.post("/user-to-user", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/user-to-user/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def user_to_user_transaction(
     transaction_data: TransactionCreate,
     current_user: User = Depends(get_current_user),

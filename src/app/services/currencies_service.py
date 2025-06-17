@@ -1,3 +1,4 @@
+
 from typing import Union
 from uuid import UUID
 from sqlalchemy import select
@@ -9,10 +10,10 @@ from app.persistence.currencies.currency import Currency
 
 
 async def _get_currency_id_by_currency_code(
-    db: AsyncSession,
-    currency_code: Union[str, AvailableCurrency]
+        db: AsyncSession,
+        currency_code: Union[str, AvailableCurrency]
 ) -> UUID:
-    
+
     if isinstance(currency_code, AvailableCurrency):
         code = currency_code.value
     else:
@@ -20,7 +21,7 @@ async def _get_currency_id_by_currency_code(
 
     # 2) normalize (strip + lowercase)
     code = code.strip().upper()
-    
+
     result = await db.execute(
         select(Currency.id)
         .where(Currency.code == code)
@@ -31,8 +32,8 @@ async def _get_currency_id_by_currency_code(
     return currency_id
 
 async def _get_currency_code_by_currency_id(
-    db: AsyncSession,
-    currency_id: UUID
+        db: AsyncSession,
+        currency_id: UUID
 ) -> UUID:
     result = await db.execute(
         select(Currency.code)
@@ -42,3 +43,7 @@ async def _get_currency_code_by_currency_id(
     if not currency_code:
         raise CurrencyNotFound()
     return currency_code
+
+async def get_currency_id_by_code(db: AsyncSession, code: str) -> UUID | None:
+    result = await db.execute(select(Currency.id).where(Currency.code == code))
+    return result.scalar_one_or_none()

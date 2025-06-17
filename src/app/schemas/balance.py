@@ -19,3 +19,9 @@ class BalanceResponse(BaseModel):
             currency_code=obj.currency.code
         )
 
+class BalanceRequest(BaseModel):
+    amount: str
+    currency_code: str
+    cvv_code:str
+    expiry:str
+    card_number:str

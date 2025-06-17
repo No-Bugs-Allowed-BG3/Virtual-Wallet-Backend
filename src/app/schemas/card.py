@@ -14,7 +14,7 @@ class CardResponse(BaseModel):
     @classmethod
     def create(cls, obj: Card) -> "CardResponse":
         return CardResponse(
-            card_number=obj.card_number,
+            card_number=str(obj.card_number),
             expiration_date=obj.expiration_date,
             cardholder_name=obj.cardholder_name,
         )
